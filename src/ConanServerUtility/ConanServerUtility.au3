@@ -1,14 +1,18 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
-#AutoIt3Wrapper_Icon=favicon.ico
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 8, 2017
+#AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
+#AutoIt3Wrapper_Outfile=..\..\build\ConanSerrverUtility(x86).exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanSerrverUtility(x64).exe
+#AutoIt3Wrapper_Compile_Both=y
+#AutoIt3Wrapper_UseX64=y
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 9, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.3.0.1
+#AutoIt3Wrapper_Res_Fileversion=2.4.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-;By Dateranoth - Feburary 8, 2017
-;Used by https://gamercide.com on their server
-;Feel free to change, adapt, and distribute
+;Originally written by Dateranoth for use
+;by https://gamercide.com on their server
+;Distributed Under GNU GENERAL PUBLIC LICENSE
 
 #include <Date.au3>
 #include <Process.au3>
