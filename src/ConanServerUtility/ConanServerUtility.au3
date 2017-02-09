@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
 #AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility(x86).exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanSerrverUtility(x64).exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility(x64).exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 9, 2017
