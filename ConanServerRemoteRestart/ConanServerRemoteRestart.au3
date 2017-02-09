@@ -1,9 +1,9 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=favicon.ico
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 4, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 5, 2017
 #AutoIt3Wrapper_Res_Description=Utility to Remotely Restart Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.0
-#AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.org
+#AutoIt3Wrapper_Res_Fileversion=2.2
+#AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;By Dateranoth - Feburary 4, 2017

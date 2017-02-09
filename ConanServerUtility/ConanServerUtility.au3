@@ -1,9 +1,9 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=favicon.ico
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 4, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 5, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.1.0.0
-#AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.org
+#AutoIt3Wrapper_Res_Fileversion=2.2.0.0
+#AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;By Dateranoth - Feburary 4, 2017
@@ -13,7 +13,8 @@
 #include <Date.au3>
 #include <Process.au3>
 #include <MsgBoxConstants.au3>
-Opt("WinTitleMatchMode", -2) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=Nocase
+#include <File.au3>
+Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=Nocase
 
 ;User Variables
 If FileExists("ConanServerUtility.ini") Then
@@ -27,7 +28,8 @@ If FileExists("ConanServerUtility.ini") Then
    Local $UseRemoteRestart = IniRead("ConanServerUtility.ini", "Use Remote Restart ?yes/no", "UseRemoteRestart", "no")
    Local $g_Port = IniRead("ConanServerUtility.ini", "Remote Restart Port", "ListenPort", "57520")
    Local $RestartCode = IniRead("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
-   Local $RestartDaily= IniRead("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
+   Local $RestartDaily = IniRead("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
+   Local $CheckForUpdate = IniRead("ConanServerUtility.ini", "Check for Update Every Hour? yes/no", "CheckForUpdate", "yes")
    Local $HotHour = IniRead("ConanServerUtility.ini", "Daily Restart Hour? 00-23", "HotHour", "00")
    Local $HotMin = IniRead("ConanServerUtility.ini", "Daily Restart Minute? 00-59", "HotMin", "01")
    Local $ExMem = IniRead("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
@@ -44,6 +46,7 @@ Else
    IniWrite("ConanServerUtility.ini", "Remote Restart Port", "ListenPort", "57520")
    IniWrite("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
    IniWrite("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
+   IniWrite("ConanServerUtility.ini", "Check for Update Every Hour? yes/no", "CheckForUpdate", "yes")
    IniWrite("ConanServerUtility.ini", "Daily Restart Hour? 00-23", "HotHour", "00")
    IniWrite("ConanServerUtility.ini", "Daily Restart Minute? 00-59", "HotMin", "01")
    IniWrite("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
@@ -66,14 +69,55 @@ Func Gamercide()
 EndFunc
 
 Func CloseServer()
-   Local $PID = ProcessExists("ConanSandboxServer-Win64-Test.exe")
-   ;WinClose("Conan")
-	  ControlSend(""& $serverdir &"\ConanSandbox\Binaries\Win64\ConanSandboxServer-Win64-Test.exe", "", "", "^c" & @CR)
-	  ControlSend("Conan", "", "", "^c" & @CR)
-   sleep(60000)
-   	  If $PID Then
-		 ProcessClose($PID)
-      EndIf
+	Local $PID = ProcessExists("ConanSandboxServer-Win64-Test.exe")
+	ControlSend("Conan Exiles -", "", "", "I" & @CR)
+	ControlSend("Conan Exiles -", "", "", "I" & @CR)
+	ControlSend("Conan Exiles -", "", "", "^C")
+	WinWaitClose("Conan Exiles -", "", 60)
+	If $PID Then
+		ProcessClose($PID)
+    EndIf
+EndFunc
+
+Func UpdateCheck()
+	Local $oXML = ObjCreate("Microsoft.XMLHTTP")
+	$oXML.Open("GET", "http://steamcommunity.com/games/440900/rss/", 0)
+	$oXML.Send
+
+	Global $sFile = _TempFile(@ScriptDir, '~', '.xml')
+	FileWrite($sFile, $oXML.responseText)
+
+	$sXML = $sFile
+	Local $oXML = ObjCreate("Microsoft.XMLDOM")
+	$oXML.Load($sXML)
+	Local $oNames = $oXML.selectNodes("//rss/channel/item/title")
+	Local $aMyDate, $aMyTime
+	_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
+    Local $cDate = "PATCH "& StringFormat("%02d", $aMyDate[2]) &"."& StringFormat("%02d", $aMyDate[3]) &"."& StringFormat("%04d", $aMyDate[1])
+	Local $cFile = @ScriptDir &"/ConanServerUtility_LastUpdate.txt"
+
+	For $oName In $oNames
+
+		If StringRegExp($oName.text,$cDate&"(?i)") Then
+				If FileRead(FileOpen($cFile)) = $oName.text Then
+					;ConsoleWrite("No New Update" & @CRLF)
+					FileClose($cFile)
+					ExitLoop
+				Else
+					FileClose($cFile)
+					FileWrite(FileOpen($cFile,2),$oName.text)
+					ConsoleWrite($oName.text & @CRLF)
+					FileClose($cFile)
+					Local $PID = ProcessExists("ConanSandboxServer-Win64-Test.exe")
+					If $PID Then
+						FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &"["& $oName.txt &"] Restart Requested by ConanServerUtility Script")
+						CloseServer()
+					EndIf
+					ExitLoop
+				EndIf
+		EndIf
+	Next
+	FileDelete($sFile)
 EndFunc
 
 Func _TCP_Server_ClientIP($hSocket)
@@ -117,24 +161,21 @@ While True
 If $UseRemoteRestart = "yes" Then
 Local $ConnectedSocket = TCPAccept($MainSocket)
 If $ConnectedSocket >= 0 Then
-;TrayTip("Connected","Someone connected to server.",3)
 $Count = 0
 While $Count < 30
 $RECV = TCPRecv($ConnectedSocket,512)
    If $RECV = $RestartCode Then
 	  Local $PID = ProcessExists("ConanSandboxServer-Win64-Test.exe") ; Will return the PID or 0 if the process isn't found.
+	  Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
 	  If $PID Then
-		 $IP = _TCP_Server_ClientIP($ConnectedSocket)
 		 Local $MEM = ProcessGetStats($PID, 0)
 		 FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
 		 " --Peak Memory:"& $MEM[1] &" Restart Requested by Remote Host: "& $IP)
-		 ;ProcessClose($PID)
 		 CloseServer()
 		 Sleep (10000)
 		 ExitLoop
 	  EndIf
 	  Else
-		$IP = _TCP_Server_ClientIP($ConnectedSocket)
 		FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" Restart ATTEMPT by Remote Host: "& $IP &" WRONG PASSWORD")
 		ExitLoop
    EndIf
@@ -151,8 +192,11 @@ If $PID = 0 Then
 	If $UseSteamCMD = "yes" Then
 		RunWait(""& $steamcmddir &"\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir "& $serverdir &" +app_update 443030 validate +quit")
 	EndIf
+	If $CheckForUpdate = "yes" Then
+		UpdateCheck()
+	EndIf
 	Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\ConanSandboxServer-Win64-Test.exe ConanSandBox?MULTIHOME="& $g_IP &"?QueryPort="& $GamePort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
-	Sleep (70000)
+	WinWait("Conan Exiles -", "", 70)
 Else
    Local $MEM = ProcessGetStats($PID, 0)
    If $MEM[0] > $ExMem And $ExMemRestart = "no" Then
@@ -162,7 +206,6 @@ Else
    ElseIf $MEM[0] > $ExMem And $ExMemRestart = "yes" Then
 	  FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
 	  " --Peak Memory:"& $MEM[1] &" Excessive Memory Use - Restart Requested by ConanServerUtility Script")
-	  ;ProcessClose($PID)
 	  CloseServer()
 	  Sleep (10000)
    EndIf
@@ -174,10 +217,14 @@ If @HOUR = $HotHour And @MIN = $HotMin And $RestartDaily = "yes" Then
 		 Local $MEM = ProcessGetStats($PID, 0)
 		 FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
 		 " --Peak Memory:"& $MEM[1] &" Daily Restart Requested by ConanServerUtility Script")
-		 ;ProcessClose($PID)
 		 CloseServer()
 	  EndIf
    Sleep (10000)
+EndIf
+
+If @MIN = $HotMin And $CheckForUpdate = "yes" Then
+	UpdateCheck()
+	Sleep(70000)
 EndIf
 
 Sleep (500)
