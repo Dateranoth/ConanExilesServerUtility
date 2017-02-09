@@ -1,14 +1,15 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=favicon.ico
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 6, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 9, 2017
 #AutoIt3Wrapper_Res_Description=Utility to Remotely Restart Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.2.2.0
+#AutoIt3Wrapper_Res_Fileversion=2.4
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-;By Dateranoth - Feburary 6, 2017
-;Used by https://gamercide.com on their server
-;Feel free to change, adapt, and distribute
+;Originally written by Dateranoth for use
+;by https://gamercide.com on their server
+;Distributed Under GNU GENERAL PUBLIC LICENSE
+
 #include <GUIConstantsEx.au3>
 #include <MsgBoxConstants.au3>
 ; Start The TCP Services
