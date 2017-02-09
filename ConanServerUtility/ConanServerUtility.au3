@@ -2,7 +2,7 @@
 #AutoIt3Wrapper_Icon=favicon.ico
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 4, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.0
+#AutoIt3Wrapper_Res_Fileversion=2.1.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.org
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -133,9 +133,10 @@ $RECV = TCPRecv($ConnectedSocket,512)
 		 Sleep (10000)
 		 ExitLoop
 	  EndIf
-   Else
-		 FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" Restart ATTEMPT by Remote Host: "& $IP &"WRONG PASSWORD")
-		 ExitLoop
+	  Else
+		$IP = _TCP_Server_ClientIP($ConnectedSocket)
+		FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" Restart ATTEMPT by Remote Host: "& $IP &" WRONG PASSWORD")
+		ExitLoop
    EndIf
 $Count += 1
 Sleep (1000)
