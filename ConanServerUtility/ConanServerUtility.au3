@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=favicon.ico
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 6, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 8, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.2.2.1
+#AutoIt3Wrapper_Res_Fileversion=2.3.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-;By Dateranoth - Feburary 6, 2017
+;By Dateranoth - Feburary 8, 2017
 ;Used by https://gamercide.com on their server
 ;Feel free to change, adapt, and distribute
 
@@ -18,6 +18,12 @@ Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=No
 
 ;User Variables
 If FileExists("ConanServerUtility.ini") Then
+	Local $iniArray = IniReadSectionNames("ConanServerUtility.ini")
+	Local $iniLength = UBound($iniArray)
+	If $iniLength <> 22 Then
+		MsgBox(4096, "ERROR: INI INCORRECT", "ConanServerUtility.ini missing section. Please delete and recreate default.")
+		Exit
+	EndIf
    Local $BindIP = IniRead("ConanServerUtility.ini", "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", "yes")
    Local $g_IP = IniRead("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
    Local $GamePort = IniRead("ConanServerUtility.ini", "Game Server Port", "GamePort", "7777")
@@ -27,11 +33,13 @@ If FileExists("ConanServerUtility.ini") Then
    Local $serverdir = IniRead("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
    Local $UseSteamCMD = IniRead("ConanServerUtility.ini", "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", "yes")
    Local $steamcmddir = IniRead("ConanServerUtility.ini", "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", "C:\Game_Servers\SteamCMD")
+   Local $validategame = IniRead("ConanServerUtility.ini", "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", "yes")
    Local $UseRemoteRestart = IniRead("ConanServerUtility.ini", "Use Remote Restart ?yes/no", "UseRemoteRestart", "no")
    Local $g_Port = IniRead("ConanServerUtility.ini", "Remote Restart Port", "ListenPort", "57520")
    Local $RestartCode = IniRead("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
    Local $RestartDaily = IniRead("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
-   Local $CheckForUpdate = IniRead("ConanServerUtility.ini", "Check for Update Every Hour? yes/no", "CheckForUpdate", "yes")
+   Local $CheckForUpdate = IniRead("ConanServerUtility.ini", "Check for Update Every X Minutes? yes/no", "CheckForUpdate", "yes")
+   Local $UpdateInterval = IniRead("ConanServerUtility.ini", "Update Check Interval in Minutes 05-59", "UpdateInterval", "59")
    Local $HotHour1 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour1", "00")
    Local $HotHour2 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour2", "00")
    Local $HotHour3 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour3", "00")
@@ -52,11 +60,13 @@ Else
    IniWrite("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
    IniWrite("ConanServerUtility.ini", "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", "yes")
    IniWrite("ConanServerUtility.ini", "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", "C:\Game_Servers\SteamCMD")
+   IniWrite("ConanServerUtility.ini", "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", "yes")
    IniWrite("ConanServerUtility.ini", "Use Remote Restart ?yes/no", "UseRemoteRestart", "no")
    IniWrite("ConanServerUtility.ini", "Remote Restart Port", "ListenPort", "57520")
    IniWrite("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
    IniWrite("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
-   IniWrite("ConanServerUtility.ini", "Check for Update Every Hour? yes/no", "CheckForUpdate", "yes")
+   IniWrite("ConanServerUtility.ini", "Check for Update Every X Minutes? yes/no", "CheckForUpdate", "yes")
+   IniWrite("ConanServerUtility.ini", "Update Check Interval in Minutes 05-59", "UpdateInterval", "59")
    IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour1", "00")
    IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour2", "00")
    IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour3", "00")
@@ -71,8 +81,13 @@ Else
    Exit
 EndIf
 
-OnAutoItExitRegister("Gamercide")
+If $UpdateInterval < 5 OR $UpdateInterval > 59 AND $CheckForUpdate = "yes" Then
+	MsgBox(4096, "Invalid Interval", "Update Interval Minimum 5 and Maximum 59 . Please Modify Interval or disable Update Check")
+	Exit
+EndIf
 
+OnAutoItExitRegister("Gamercide")
+Global $mNextCheck = 0
 Global $sFile = ""
 Global $Server_EXE = "ConanSandboxServer-Win64-Test.exe"
 Global $PIDFile = @ScriptDir &"\ConanServerUtility_lastpid_tmp"
@@ -151,10 +166,21 @@ Func ParseRSS()
 	Next
 EndFunc
 
+Func CheckInterval()
+	$mNextCheck = (@MIN + $UpdateInterval)
+	If $mNextCheck >= 60 Then
+		$mNextCheck = ($mNextCheck - 60)
+	EndIf
+	If $mNextCheck = @MIN Then
+		$mNextCheck = ($mNextCheck - 1)
+	EndIf
+EndFunc
+
 Func UpdateCheck()
 	GetRSS()
 	ParseRSS()
 	FileDelete($sFile)
+	CheckInterval()
 EndFunc
 
 Func _TCP_Server_ClientIP($hSocket)
@@ -174,7 +200,14 @@ If $UseSteamCMD = "yes" Then
 		MsgBox ( 0x0, "SteamCMD Not Found", "Could not find steamcmd.exe at "& $steamcmddir)
 		Exit
 	EndIf
-
+	Local $sManifestExists = FileExists($steamcmddir &"\steamapps\appmanifest_443030.acf")
+		If $sManifestExists = 1 Then
+			Local $manifestFound = MsgBox (4100, "Warning", "Install manifest found at "& $steamcmddir &"\steamapps\appmanifest_443030.acf"& @CRLF & @CRLF &"Suggest moving file to "& _
+			$serverdir &"\steamapps\appmanifest_443030.acf before running SteamCMD"& @CRLF & @CRLF &"Would you like to Exit Now?",20)
+			If $manifestFound = 6 Then
+				Exit
+			EndIf
+		EndIf
 Else
 	Local $cFileExists = FileExists($serverdir &"\ConanSandboxServer.exe")
 	If $cFileExists = 0 Then
@@ -192,6 +225,10 @@ Local $MainSocket = TCPListen($g_IP, $g_Port, 100)
 		MsgBox ( 0x0, "TCP Error", "Could not bind to [" &  $g_IP & "] Is this the correct Server IP?")
 		Exit
 		EndIf
+EndIf
+
+If $CheckForUpdate = "yes" Then
+	CheckInterval()
 EndIf
 
 While True
@@ -229,7 +266,11 @@ EndIf
 Local $PID = ProcessExists($ConanPID)
 If $PID = 0 Then
 	If $UseSteamCMD = "yes" Then
-		RunWait(""& $steamcmddir &"\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir "& $serverdir &" +app_update 443030 validate +quit")
+		If $validategame = "yes" Then
+			RunWait(""& $steamcmddir &"\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir "& $serverdir &" +app_update 443030 validate +quit")
+		Else
+			RunWait(""& $steamcmddir &"\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir "& $serverdir &" +app_update 443030 +quit")
+		EndIf
 	EndIf
 	If $CheckForUpdate = "yes" Then
 		UpdateCheck()
@@ -237,7 +278,7 @@ If $PID = 0 Then
 	If $BindIP = "no" Then
 		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox?Port="& $GamePort &"?QueryPort="& $QueryPort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
 	Else
-		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\ConanSandboxServer-Win64-Test.exe ConanSandBox?MULTIHOME="& $g_IP &"?Port="& $GamePort &"?QueryPort="& $QueryPort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
+		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox?MULTIHOME="& $g_IP &"?Port="& $GamePort &"?QueryPort="& $QueryPort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
 	EndIf
 	$ConanhWnd = WinGetHandle(WinWait(""& $serverdir &"", "", 70))
 	If $SteamFix = "yes" Then
@@ -281,9 +322,9 @@ If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $Hot
    Sleep (10000)
 EndIf
 
-If @MIN = $HotMin And $CheckForUpdate = "yes" Then
+If @MIN = $mNextCheck And $CheckForUpdate = "yes" Then
 	UpdateCheck()
-	Sleep(70000)
+	;Sleep(70000)
 EndIf
 
 Sleep (500)
