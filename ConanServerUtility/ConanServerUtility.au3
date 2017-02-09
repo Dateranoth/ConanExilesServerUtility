@@ -2,11 +2,11 @@
 #AutoIt3Wrapper_Icon=favicon.ico
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 5, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.2.0.2
+#AutoIt3Wrapper_Res_Fileversion=2.2.0.3
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-;By Dateranoth - Feburary 4, 2017
+;By Dateranoth - Feburary 5, 2017
 ;Used by https://gamercide.com on their server
 ;Feel free to change, adapt, and distribute
 
@@ -67,6 +67,8 @@ EndIf
 
 OnAutoItExitRegister("Gamercide")
 
+Global $sFile = ""
+
 Func Gamercide()
 	If @exitMethod <> 1 Then
 	$Shutdown = MsgBox(4100, "Shut Down?","Do you wish to shutdown the server?",10)
@@ -89,44 +91,47 @@ Func CloseServer()
     EndIf
 EndFunc
 
-Func UpdateCheck()
+Func GetRSS()
 	Local $oXML = ObjCreate("Microsoft.XMLHTTP")
 	$oXML.Open("GET", "http://steamcommunity.com/games/440900/rss/", 0)
 	$oXML.Send
 
-	Global $sFile = _TempFile(@ScriptDir, '~', '.xml')
+	$sFile = _TempFile(@ScriptDir, '~', '.xml')
 	FileWrite($sFile, $oXML.responseText)
+EndFunc
 
+Func ParseRSS()
 	$sXML = $sFile
 	Local $oXML = ObjCreate("Microsoft.XMLDOM")
 	$oXML.Load($sXML)
 	Local $oNames = $oXML.selectNodes("//rss/channel/item/title")
 	Local $aMyDate, $aMyTime
 	_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
-    Local $cDate = "PATCH "& StringFormat("%02d", $aMyDate[2]) &"."& StringFormat("%02d", $aMyDate[3]) &"."& StringFormat("%04d", $aMyDate[1])
-	Local $cFile = @ScriptDir &"/ConanServerUtility_LastUpdate.txt"
-
+    Local $cDate = "PATCH "& StringFormat("%02d", $aMyDate[3]) &"."& StringFormat("%02d", $aMyDate[2]) &"."& StringFormat("%04d", $aMyDate[1])
+	Local $cFile = @ScriptDir &"\ConanServerUtility_LastUpdate.txt"
 	For $oName In $oNames
 
 		If StringRegExp($oName.text,$cDate&"(?i)") Then
-				If FileRead(FileOpen($cFile)) = $oName.text Then
+				If FileRead($cFile) = $oName.text Then
 					;ConsoleWrite("No New Update" & @CRLF)
-					FileClose($cFile)
 					ExitLoop
 				Else
-					FileClose($cFile)
-					FileWrite(FileOpen($cFile,2),$oName.text)
-					ConsoleWrite($oName.text & @CRLF)
-					FileClose($cFile)
+					FileDelete($cFile)
+					FileWrite($cFile,$oName.text)
 					Local $PID = ProcessExists("ConanSandboxServer-Win64-Test.exe")
 					If $PID Then
-						FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &"["& $oName.txt &"] Restart Requested by ConanServerUtility Script")
+						FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" ["& $oName.text &"] Daily Restart Requested by ConanServerUtility Script")
 						CloseServer()
 					EndIf
 					ExitLoop
 				EndIf
 		EndIf
 	Next
+EndFunc
+
+Func UpdateCheck()
+	GetRSS()
+	ParseRSS()
 	FileDelete($sFile)
 EndFunc
 
@@ -176,8 +181,8 @@ While $Count < 30
 $RECV = TCPRecv($ConnectedSocket,512)
    If $RECV = $RestartCode Then
 	  Local $PID = ProcessExists("ConanSandboxServer-Win64-Test.exe") ; Will return the PID or 0 if the process isn't found.
-	  Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
 	  If $PID Then
+		 Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
 		 Local $MEM = ProcessGetStats($PID, 0)
 		 FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
 		 " --Peak Memory:"& $MEM[1] &" Restart Requested by Remote Host: "& $IP)
@@ -186,6 +191,7 @@ $RECV = TCPRecv($ConnectedSocket,512)
 		 ExitLoop
 	  EndIf
 	  Else
+	    Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
 		FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @MON &"-"& @MDAY &"-"& @YEAR &" "& @HOUR &":"& @MIN &" Restart ATTEMPT by Remote Host: "& $IP &" WRONG PASSWORD")
 		ExitLoop
    EndIf
