@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=favicon.ico
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 5, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 6, 2017
 #AutoIt3Wrapper_Res_Description=Utility to Remotely Restart Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.2
+#AutoIt3Wrapper_Res_Fileversion=2.2.2.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
-;By Dateranoth - Feburary 4, 2017
+;By Dateranoth - Feburary 6, 2017
 ;Used by https://gamercide.com on their server
 ;Feel free to change, adapt, and distribute
 #include <GUIConstantsEx.au3>
@@ -19,21 +19,31 @@
    ;--------------------------
    Local $ConnectedSocket, $szData
 If FileExists("ConanServerRemoteRestart.ini") Then
-   Local $cIPADDRESS = IniRead("ConanServerRemoteRestart.ini", "GameServerIP", "cIPADDRESS", "127.0.0.1")
+   Local $cIPorName = IniRead("ConanServerRemoteRestart.ini", "Use IP (x.x.x.x) or Name (myserver.com) (ip/name)", "cIPorName", "ip")
+   Local $cSERVERADDRESS = IniRead("ConanServerRemoteRestart.ini", "GameServerIP (can be name or IP based on above setting)", "cSERVERADDRESS", "127.0.0.1")
    Local $cPORT = IniRead("ConanServerRemoteRestart.ini", "RestartServerPort", "cPORT", "57520")
    Local $RPassword = IniRead("ConanServerRemoteRestart.ini", "DefaultRestartPassword", "RPassword", "")
 
 Else
-   IniWrite("ConanServerRemoteRestart.ini", "GameServerIP", "cIPADDRESS", "127.0.0.1")
+   IniWrite("ConanServerRemoteRestart.ini", "Use IP (x.x.x.x) or Name (myserver.com) (ip/name)", "cIPorName", "ip")
+   IniWrite("ConanServerRemoteRestart.ini", "GameServerIP (can be name or IP based on above setting)", "cSERVERADDRESS", "127.0.0.1")
    IniWrite("ConanServerRemoteRestart.ini", "RestartServerPort", "cPORT", "57520")
    IniWrite("ConanServerRemoteRestart.ini", "DefaultRestartPassword", "RPassword", "")
    MsgBox(4096, "Default INI File Made", "Please Modify Default Values and Restart Script")
+   TCPShutdown() ; Close the TCP service.
    Exit
+EndIf
+
+If $cIPorName = "name" Then
+	Local $cIPAddress = TCPNameToIP($cSERVERADDRESS)
+Else
+	Local $cIPAddress = $cSERVERADDRESS
 EndIf
 
 OnAutoItExitRegister("Gamercide")
 Func Gamercide()
-	MsgBox(4096, "Thanks for using our Application", "Please visit us at https://gamercide.com",5)
+	TCPShutdown() ; Close the TCP service.
+	MsgBox(4096, "Thanks for using our Application", "Please visit us at https://gamercide.com",2)
 	Exit
 EndFunc
 
@@ -52,13 +62,15 @@ Func MyTCP_Client($sIPAddress, $iPort, $iData)
     EndIf
 
     ; Send Restart Code to the Server.
-    TCPSend($iSocket, $cData)
+    Local $bytes = TCPSend($iSocket, $cData)
 
     ; If an error occurred display the error code and return False.
     If @error Then
         $iError = @error
         MsgBox(BitOR($MB_SYSTEMMODAL, $MB_ICONHAND), "", "Client:" & @CRLF & "Could not send the data, Error code: " & $iError)
         Return False
+	Else
+		MsgBox(4096, "Success!", $iData &" Sent to "& $sIPAddress &":"& $iPort &" containing "& $bytes &" bytes of data",10)
     EndIf
 
     ; Close the socket.
@@ -80,4 +92,6 @@ EndFunc   ;==>MyTCP_Client
 			EndIf
         WEnd
 
-TCPShutdown()
+Func OnAutoItExit()
+
+EndFunc
