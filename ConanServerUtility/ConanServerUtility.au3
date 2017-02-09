@@ -2,7 +2,7 @@
 #AutoIt3Wrapper_Icon=favicon.ico
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 8, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.3.0.0
+#AutoIt3Wrapper_Res_Fileversion=2.3.0.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -148,7 +148,7 @@ Func ParseRSS()
 	Local $cFile = @ScriptDir &"\ConanServerUtility_LastUpdate.txt"
 	For $oName In $oNames
 
-		If StringRegExp($oName.text,$cDate&"(?i)") Then
+		If StringRegExp($oName.text,"(?i)"& $cDate &"(?i)") Then
 				If FileRead($cFile) = $oName.text Then
 					;ConsoleWrite("No New Update" & @CRLF)
 					ExitLoop
