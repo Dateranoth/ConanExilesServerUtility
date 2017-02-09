@@ -2,7 +2,7 @@
 #AutoIt3Wrapper_Icon=favicon.ico
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 6, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.2.2.0
+#AutoIt3Wrapper_Res_Fileversion=2.2.2.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -20,7 +20,8 @@ Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=No
 If FileExists("ConanServerUtility.ini") Then
    Local $BindIP = IniRead("ConanServerUtility.ini", "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", "yes")
    Local $g_IP = IniRead("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
-   Local $GamePort = IniRead("ConanServerUtility.ini", "Game Server Port", "GamePort", "27015")
+   Local $GamePort = IniRead("ConanServerUtility.ini", "Game Server Port", "GamePort", "7777")
+   Local $QueryPort = IniRead("ConanServerUtility.ini", "Steam Query Port", "QueryPort", "27015")
    Local $AdminPass = IniRead("ConanServerUtility.ini", "Admin Password", "AdminPass", "yOuRpaSHeRe")
    Local $MaxPlayers = IniRead("ConanServerUtility.ini", "Max Players", "MaxPlayers", "20")
    Local $serverdir = IniRead("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
@@ -44,7 +45,8 @@ If FileExists("ConanServerUtility.ini") Then
 Else
    IniWrite("ConanServerUtility.ini", "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", "yes")
    IniWrite("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
-   IniWrite("ConanServerUtility.ini", "Game Server Port", "GamePort", "27015")
+   IniWrite("ConanServerUtility.ini", "Game Server Port", "GamePort", "7777")
+   IniWrite("ConanServerUtility.ini", "Steam Query Port", "QueryPort", "27015")
    IniWrite("ConanServerUtility.ini", "Admin Password", "AdminPass", "yOuRpaSHeRe")
    IniWrite("ConanServerUtility.ini", "Max Players", "MaxPlayers", "20")
    IniWrite("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
@@ -233,9 +235,9 @@ If $PID = 0 Then
 		UpdateCheck()
 	EndIf
 	If $BindIP = "no" Then
-		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox?QueryPort="& $GamePort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
+		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox?Port="& $GamePort &"?QueryPort="& $QueryPort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
 	Else
-		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\ConanSandboxServer-Win64-Test.exe ConanSandBox?MULTIHOME="& $g_IP &"?QueryPort="& $GamePort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
+		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\ConanSandboxServer-Win64-Test.exe ConanSandBox?MULTIHOME="& $g_IP &"?Port="& $GamePort &"?QueryPort="& $QueryPort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
 	EndIf
 	$ConanhWnd = WinGetHandle(WinWait(""& $serverdir &"", "", 70))
 	If $SteamFix = "yes" Then
