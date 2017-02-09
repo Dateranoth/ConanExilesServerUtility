@@ -2,7 +2,7 @@
 #AutoIt3Wrapper_Icon=favicon.ico
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 5, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.2.0.1
+#AutoIt3Wrapper_Res_Fileversion=2.2.0.2
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -30,10 +30,12 @@ If FileExists("ConanServerUtility.ini") Then
    Local $RestartCode = IniRead("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
    Local $RestartDaily = IniRead("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
    Local $CheckForUpdate = IniRead("ConanServerUtility.ini", "Check for Update Every Hour? yes/no", "CheckForUpdate", "yes")
-   Local $HotHour1 = IniRead("ConanServerUtility.ini", "Daily Restart Hour 1? 00-23", "HotHour1", "00")
-   Local $HotHour2 = IniRead("ConanServerUtility.ini", "Daily Restart Hour 2? 00-23", "HotHour2", "00")
-   Local $HotHour3 = IniRead("ConanServerUtility.ini", "Daily Restart Hour 3? 00-23", "HotHour3", "00")
-   Local $HotHour4 = IniRead("ConanServerUtility.ini", "Daily Restart Hour 4? 00-23", "HotHour4", "00")
+   Local $HotHour1 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour1", "00")
+   Local $HotHour2 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour2", "00")
+   Local $HotHour3 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour3", "00")
+   Local $HotHour4 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour4", "00")
+   Local $HotHour5 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour5", "00")
+   Local $HotHour6 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour6", "00")
    Local $HotMin = IniRead("ConanServerUtility.ini", "Daily Restart Minute? 00-59", "HotMin", "01")
    Local $ExMem = IniRead("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
    Local $ExMemRestart = IniRead("ConanServerUtility.ini", "Restart On Excessive Memory Use? yes/no", "ExMemRestart", "no")
@@ -50,10 +52,12 @@ Else
    IniWrite("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
    IniWrite("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
    IniWrite("ConanServerUtility.ini", "Check for Update Every Hour? yes/no", "CheckForUpdate", "yes")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hour 1? 00-23", "HotHour1", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hour 2? 00-23", "HotHour2", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hour 3? 00-23", "HotHour3", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hour 4? 00-23", "HotHour4", "00")
+   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour1", "00")
+   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour2", "00")
+   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour3", "00")
+   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour4", "00")
+   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour5", "00")
+   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour6", "00")
    IniWrite("ConanServerUtility.ini", "Daily Restart Minute? 00-59", "HotMin", "01")
    IniWrite("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
    IniWrite("ConanServerUtility.ini", "Restart On Excessive Memory Use? yes/no", "ExMemRestart", "no")
@@ -217,7 +221,7 @@ Else
    EndIf
 EndIf
 
-If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4) And @MIN = $HotMin And $RestartDaily = "yes") Then
+If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes") Then
    Local $PID = ProcessExists("ConanSandboxServer-Win64-Test.exe")
 	  If $PID Then
 		 Local $MEM = ProcessGetStats($PID, 0)
