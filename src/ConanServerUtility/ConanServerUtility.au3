@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 9, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.4.0.0
+#AutoIt3Wrapper_Res_Fileversion=2.4.0.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -24,7 +24,7 @@ Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=No
 If FileExists("ConanServerUtility.ini") Then
 	Local $iniArray = IniReadSectionNames("ConanServerUtility.ini")
 	Local $iniLength = UBound($iniArray)
-	If $iniLength <> 22 Then
+	If $iniLength <> 23 Then
 		MsgBox(4096, "ERROR: INI INCORRECT", "ConanServerUtility.ini missing section. Please delete and recreate default.")
 		Exit
 	EndIf
