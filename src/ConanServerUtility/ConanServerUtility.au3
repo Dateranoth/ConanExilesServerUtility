@@ -4,9 +4,9 @@
 #AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility(x64).exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 9, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 10, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.4.0.1
+#AutoIt3Wrapper_Res_Fileversion=2.4.0.2
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -339,16 +339,19 @@ EndIf
 
 If ($CheckForUpdate = "yes") And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $UpdateInterval) Then
 	UpdateCheck()
-	$mNextCheck = _NowCalc
+	$mNextCheck = _NowCalc()
 EndIf
 
 If ($logRotate = "yes") And ((_DateDiff('h', $logStartTime, _NowCalc())) >= 1) Then
+	If Not FileExists ($logFile) Then
+		FileWriteLine($logFile, $logStartTime &" Log File Created")
+	EndIf
 	Local $logFileTime = FileGetTime($logFile,1)
 	Local $logTimeSinceCreation = _DateDiff('h', $logFileTime[0] &"/"& $logFileTime[1] &"/"& $logFileTime[2] &" "& $logFileTime[3] &":"& $logFileTime[4] &":"& $logFileTime[5], _NowCalc())
 	If $logTimeSinceCreation >= $logHoursBetweenRotate Then
 		RotateLogs()
 	EndIf
-	$logStartTime = _NowCalc
+	$logStartTime = _NowCalc()
 EndIf
 
 Sleep (500)
