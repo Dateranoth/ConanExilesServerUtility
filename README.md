@@ -17,7 +17,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Optionally run verification every time SteamCMD is ran
 *   Optionally restart server on excessive memory use.
 *   Log Excessive memory use. Set to a very large number if you don't wish to log anything
-*   Set Game IP, game port, max players, and Admin Password
+*   Set Game Name, Game IP, Game port, max players, Server Password, and Admin Password
     
 # Conan Remote Restart Features
 *   If enabled on the server, use to remotely restart the server.
