@@ -54,6 +54,9 @@ If FileExists("ConanServerUtility.ini") Then
    Local $ExMem = IniRead("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
    Local $ExMemRestart = IniRead("ConanServerUtility.ini", "Restart On Excessive Memory Use? yes/no", "ExMemRestart", "no")
    Local $SteamFix = IniRead("ConanServerUtility.ini", "Running Server with Steam Open? (yes/no)", "SteamFix", "no")
+   Local $logRotate = IniRead("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logRotate", "yes")
+   Local $logQuantity = IniRead("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", "10")
+   Local $logHoursBetweenRotate = IniRead("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", "24")
 Else
    IniWrite("ConanServerUtility.ini", "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", "yes")
    IniWrite("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
@@ -81,21 +84,31 @@ Else
    IniWrite("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
    IniWrite("ConanServerUtility.ini", "Restart On Excessive Memory Use? yes/no", "ExMemRestart", "no")
    IniWrite("ConanServerUtility.ini", "Running Server with Steam Open? (yes/no)", "SteamFix", "no")
+   IniWrite("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logRotate", "yes")
+   IniWrite("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", "10")
+   IniWrite("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", "24")
    MsgBox(4096, "Default INI File Made", "Please Modify Default Values and Restart Script")
+
    Exit
 EndIf
 
-If $UpdateInterval < 5 OR $UpdateInterval > 59 AND $CheckForUpdate = "yes" Then
-	MsgBox(4096, "Invalid Interval", "Update Interval Minimum 5 and Maximum 59 . Please Modify Interval or disable Update Check")
-	Exit
+If $logHoursBetweenRotate < 1 Then
+	$logHoursBetweenRotate = 1
+EndIf
+
+If $UpdateInterval < 5 AND $CheckForUpdate = "yes" Then
+	$UpdateInterval = 5
 EndIf
 
 OnAutoItExitRegister("Gamercide")
-Global $mNextCheck = 0
+Global $mNextCheck = _NowCalc()
 Global $sFile = ""
 Global $Server_EXE = "ConanSandboxServer-Win64-Test.exe"
 Global $PIDFile = @ScriptDir &"\ConanServerUtility_lastpid_tmp"
 Global $hWndFile = @ScriptDir &"\ConanServerUtility_lasthwnd_tmp"
+Global $logFile = @ScriptDir & "\ConanServerUtility.log"
+Global $logStartTime = _NowCalc()
+
 If FileExists($PIDFile) Then
 	Global $ConanPID = FileRead($PIDFile)
 	Global $ConanhWnd = HWnd(FileRead($hWndFile))
@@ -104,11 +117,28 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
+Func RotateLogs()
+	For $i = $logQuantity To 1 Step -1
+		ConsoleWrite($logFile & $i)
+		ConsoleWrite(@CRLF)
+		If FileExists($logFile & $i) Then
+			FileMove($logFile & $i,$logFile & ($i+1),1)
+		EndIf
+	Next
+	If FileExists($logFile & ($logQuantity+1)) Then
+		FileDelete($logFile & ($logQuantity+1))
+	EndIf
+	If FileExists($logFile) Then
+		FileMove($logFile,$logFile & "1",1)
+		FileWriteLine($logFile, _NowCalc() &" Log Files Rotated")
+	EndIf
+EndFunc
+
 Func Gamercide()
 	If @exitMethod <> 1 Then
 	$Shutdown = MsgBox(4100, "Shut Down?","Do you wish to shutdown the server?",10)
 		If $Shutdown = 6 Then
-			FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @YEAR &"-"& @MON &"-"& @MDAY &" "& @HOUR &":"& @MIN &" Server Shutdown by User Input from ConanServerUtility Script")
+			FileWriteLine($logFile,  _NowCalc() &" Server Shutdown by User Input from ConanServerUtility Script")
 			CloseServer()
 		EndIf
 		MsgBox(4096, "Thanks for using our Application", "Please visit us at https://gamercide.com",2)
@@ -148,7 +178,7 @@ Func ParseRSS()
 	Local $oNames = $oXML.selectNodes("//rss/channel/item/title")
 	Local $aMyDate, $aMyTime
 	_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
-    Local $cDate = "PATCH "& StringFormat("%02d", $aMyDate[3]) &"."& StringFormat("%02d", $aMyDate[2]) &"."& StringFormat("%04d", $aMyDate[1])
+    Local $cDate = "PATCH "& StringFormat("%02i.%02i.%04i", $aMyDate[3], $aMyDate[2], $aMyDate[1])
 	Local $cFile = @ScriptDir &"\ConanServerUtility_LastUpdate.txt"
 	For $oName In $oNames
 
@@ -161,7 +191,7 @@ Func ParseRSS()
 					FileWrite($cFile,$oName.text)
 					Local $PID = ProcessExists($ConanPID)
 					If $PID Then
-						FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @YEAR &"-"& @MON &"-"& @MDAY &" "& @HOUR &":"& @MIN &" ["& $oName.text &"] Restart for Update Requested by ConanServerUtility Script")
+						FileWriteLine($logFile, _NowCalc() &" ["& $oName.text &"] Restart for Update Requested by ConanServerUtility Script")
 						CloseServer()
 					EndIf
 					ExitLoop
@@ -170,21 +200,10 @@ Func ParseRSS()
 	Next
 EndFunc
 
-Func CheckInterval()
-	$mNextCheck = (@MIN + $UpdateInterval)
-	If $mNextCheck >= 60 Then
-		$mNextCheck = ($mNextCheck - 60)
-	EndIf
-	If $mNextCheck = @MIN Then
-		$mNextCheck = ($mNextCheck - 1)
-	EndIf
-EndFunc
-
 Func UpdateCheck()
 	GetRSS()
 	ParseRSS()
 	FileDelete($sFile)
-	CheckInterval()
 EndFunc
 
 Func _TCP_Server_ClientIP($hSocket)
@@ -231,10 +250,6 @@ Local $MainSocket = TCPListen($g_IP, $g_Port, 100)
 		EndIf
 EndIf
 
-If $CheckForUpdate = "yes" Then
-	CheckInterval()
-EndIf
-
 While True
 If $UseRemoteRestart = "yes" Then
 Local $ConnectedSocket = TCPAccept($MainSocket)
@@ -248,15 +263,14 @@ $PassCompare = StringCompare($RECV, $RestartCode, 1)
 	  If $PID Then
 		 Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
 		 Local $MEM = ProcessGetStats($PID, 0)
-		 FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @YEAR &"-"& @MON &"-"& @MDAY &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
-		 " --Peak Memory:"& $MEM[1] &" Restart Requested by Remote Host: "& $IP)
+		 FileWriteLine($logFile, _NowCalc() &" --Work Memory:"& $MEM[0] &" --Peak Memory:"& $MEM[1] &" Restart Requested by Remote Host: "& $IP)
 		 CloseServer()
 		 Sleep (10000)
 		 ExitLoop
 	  EndIf
 	  Else
 	    Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
-		FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @YEAR &"-"& @MON &"-"& @MDAY &" "& @HOUR &":"& @MIN &" Restart ATTEMPT by Remote Host: "& $IP &" WRONG PASSWORD: "& $RECV)
+		FileWriteLine($logFile, _NowCalc() &" Restart ATTEMPT by Remote Host: "& $IP &" WRONG PASSWORD: "& $RECV)
 		ExitLoop
    EndIf
 $Count += 1
@@ -304,12 +318,10 @@ If $PID = 0 Then
 Else
    Local $MEM = ProcessGetStats($PID, 0)
    If $MEM[0] > $ExMem And $ExMemRestart = "no" Then
-	  FileWriteLine(@ScriptDir & "\ConanServerUtility_ExcessiveMemoryLog.txt", @YEAR &"-"& @MON &"-"& @MDAY &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
-        " --Peak Memory:"& $MEM[1])
+	  FileWriteLine($logFile, _NowCalc() &" --Work Memory:"& $MEM[0] &" --Peak Memory:"& $MEM[1])
 	  Sleep (10000)
    ElseIf $MEM[0] > $ExMem And $ExMemRestart = "yes" Then
-	  FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @YEAR &"-"& @MON &"-"& @MDAY &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
-	  " --Peak Memory:"& $MEM[1] &" Excessive Memory Use - Restart Requested by ConanServerUtility Script")
+	  FileWriteLine($logFile, _NowCalc() &" --Work Memory:"& $MEM[0] &" --Peak Memory:"& $MEM[1] &" Excessive Memory Use - Restart Requested by ConanServerUtility Script")
 	  CloseServer()
 	  Sleep (10000)
    EndIf
@@ -319,16 +331,24 @@ If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $Hot
    Local $PID = ProcessExists($ConanPID)
 	  If $PID Then
 		 Local $MEM = ProcessGetStats($PID, 0)
-		 FileWriteLine(@ScriptDir & "\ConanServerUtility_RestartLog.txt", @YEAR &"-"& @MON &"-"& @MDAY &" "& @HOUR &":"& @MIN &" --Work Memory:"& $MEM[0] & _
-		 " --Peak Memory:"& $MEM[1] &" Daily Restart Requested by ConanServerUtility Script")
+		 FileWriteLine($logFile,  _NowCalc() &" --Work Memory:"& $MEM[0] &" --Peak Memory:"& $MEM[1] &" Daily Restart Requested by ConanServerUtility Script")
 		 CloseServer()
 	  EndIf
    Sleep (10000)
 EndIf
 
-If @MIN = $mNextCheck And $CheckForUpdate = "yes" Then
+If ($CheckForUpdate = "yes") And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $UpdateInterval) Then
 	UpdateCheck()
-	;Sleep(70000)
+	$mNextCheck = _NowCalc
+EndIf
+
+If ($logRotate = "yes") And ((_DateDiff('h', $logStartTime, _NowCalc())) >= 1) Then
+	Local $logFileTime = FileGetTime($logFile,1)
+	Local $logTimeSinceCreation = _DateDiff('h', $logFileTime[0] &"/"& $logFileTime[1] &"/"& $logFileTime[2] &" "& $logFileTime[3] &":"& $logFileTime[4] &":"& $logFileTime[5], _NowCalc())
+	If $logTimeSinceCreation >= $logHoursBetweenRotate Then
+		RotateLogs()
+	EndIf
+	$logStartTime = _NowCalc
 EndIf
 
 Sleep (500)
