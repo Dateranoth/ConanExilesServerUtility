@@ -24,7 +24,7 @@ Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=No
 If FileExists("ConanServerUtility.ini") Then
 	Local $iniArray = IniReadSectionNames("ConanServerUtility.ini")
 	Local $iniLength = UBound($iniArray)
-	If $iniLength <> 23 Then
+	If $iniLength <> 25 Then
 		MsgBox(4096, "ERROR: INI INCORRECT", "ConanServerUtility.ini missing section. Please delete and recreate default.")
 		Exit
 	EndIf
@@ -32,6 +32,8 @@ If FileExists("ConanServerUtility.ini") Then
    Local $g_IP = IniRead("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
    Local $GamePort = IniRead("ConanServerUtility.ini", "Game Server Port", "GamePort", "7777")
    Local $QueryPort = IniRead("ConanServerUtility.ini", "Steam Query Port", "QueryPort", "27015")
+   Local $ServerName = IniRead("ConanServerUtility.ini", "Server Name", "ServerName", "Conan Server Utility Server")
+   Local $ServerPass = IniRead("ConanServerUtility.ini", "Server Password", "ServerPass", "")
    Local $AdminPass = IniRead("ConanServerUtility.ini", "Admin Password", "AdminPass", "yOuRpaSHeRe")
    Local $MaxPlayers = IniRead("ConanServerUtility.ini", "Max Players", "MaxPlayers", "20")
    Local $serverdir = IniRead("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
@@ -62,7 +64,9 @@ Else
    IniWrite("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
    IniWrite("ConanServerUtility.ini", "Game Server Port", "GamePort", "7777")
    IniWrite("ConanServerUtility.ini", "Steam Query Port", "QueryPort", "27015")
-   IniWrite("ConanServerUtility.ini", "Admin Password", "AdminPass", "yOuRpaSHeRe")
+   IniWrite("ConanServerUtility.ini", "Server Name", "ServerName", "Conan Server Utility Server")
+   IniWrite("ConanServerUtility.ini", "Server Password", "ServerPass", "")
+   IniWrite("ConanServerUtility.ini", "Admin Password", "AdminPass", "yOuRpaSHeRenoHASHsymbol")
    IniWrite("ConanServerUtility.ini", "Max Players", "MaxPlayers", "20")
    IniWrite("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
    IniWrite("ConanServerUtility.ini", "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", "yes")
@@ -294,9 +298,9 @@ If $PID = 0 Then
 		UpdateCheck()
 	EndIf
 	If $BindIP = "no" Then
-		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox?Port="& $GamePort &"?QueryPort="& $QueryPort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
+		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox -Port="& $GamePort &" -QueryPort="& $QueryPort &" -MaxPlayers="& $MaxPlayers &" -AdminPassword="& $AdminPass &" -ServerPassword="& $ServerPass &" -ServerName="""& $ServerName &""" -listen -nosteamclient -game -server -log")
 	Else
-		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox?MULTIHOME="& $g_IP &"?Port="& $GamePort &"?QueryPort="& $QueryPort &"?MaxPlayers="& $MaxPlayers &"?AdminPassword="& $AdminPass &"?listen -nosteamclient -game -server -log")
+		$ConanPID = Run(""& $serverdir &"\ConanSandbox\Binaries\Win64\"& $Server_EXE &" ConanSandBox -MULTIHOME="& $g_IP &" -Port="& $GamePort &" -QueryPort="& $QueryPort &" -MaxPlayers="& $MaxPlayers &" -AdminPassword="& $AdminPass &" -ServerPassword="& $ServerPass &" -ServerName="""& $ServerName &""" -listen -nosteamclient -game -server -log")
 	EndIf
 	$ConanhWnd = WinGetHandle(WinWait(""& $serverdir &"", "", 70))
 	If $SteamFix = "yes" Then
