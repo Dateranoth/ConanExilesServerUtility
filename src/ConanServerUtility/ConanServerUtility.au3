@@ -6,7 +6,7 @@
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 10, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.5
+#AutoIt3Wrapper_Res_Fileversion=2.6.5
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -14,97 +14,12 @@
 ;by https://gamercide.com on their server
 ;Distributed Under GNU GENERAL PUBLIC LICENSE
 
+Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=Nocase
 #include <Date.au3>
 #include <Process.au3>
 #include <MsgBoxConstants.au3>
 #include <File.au3>
-Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=Nocase
 
-;User Variables
-If FileExists("ConanServerUtility.ini") Then
-	Local $iniArray = IniReadSectionNames("ConanServerUtility.ini")
-	Local $iniLength = UBound($iniArray)
-	If $iniLength <> 25 Then
-		MsgBox(4096, "ERROR: INI INCORRECT", "ConanServerUtility.ini missing section. Please delete and recreate default.")
-		Exit
-	EndIf
-   Local $BindIP = IniRead("ConanServerUtility.ini", "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", "yes")
-   Local $g_IP = IniRead("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
-   Local $GamePort = IniRead("ConanServerUtility.ini", "Game Server Port", "GamePort", "7777")
-   Local $QueryPort = IniRead("ConanServerUtility.ini", "Steam Query Port", "QueryPort", "27015")
-   Local $ServerName = IniRead("ConanServerUtility.ini", "Server Name", "ServerName", "Conan Server Utility Server")
-   Local $ServerPass = IniRead("ConanServerUtility.ini", "Server Password", "ServerPass", "")
-   Local $AdminPass = IniRead("ConanServerUtility.ini", "Admin Password", "AdminPass", "yOuRpaSHeRe")
-   Local $MaxPlayers = IniRead("ConanServerUtility.ini", "Max Players", "MaxPlayers", "20")
-   Local $serverdir = IniRead("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
-   Local $UseSteamCMD = IniRead("ConanServerUtility.ini", "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", "yes")
-   Local $steamcmddir = IniRead("ConanServerUtility.ini", "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", "C:\Game_Servers\SteamCMD")
-   Local $validategame = IniRead("ConanServerUtility.ini", "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", "yes")
-   Local $UseRemoteRestart = IniRead("ConanServerUtility.ini", "Use Remote Restart ?yes/no", "UseRemoteRestart", "no")
-   Local $g_Port = IniRead("ConanServerUtility.ini", "Remote Restart Port", "ListenPort", "57520")
-   Local $RestartCode = IniRead("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
-   Local $RestartDaily = IniRead("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
-   Local $CheckForUpdate = IniRead("ConanServerUtility.ini", "Check for Update Every X Minutes? yes/no", "CheckForUpdate", "yes")
-   Local $UpdateInterval = IniRead("ConanServerUtility.ini", "Update Check Interval in Minutes 05-59", "UpdateInterval", "59")
-   Local $HotHour1 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour1", "00")
-   Local $HotHour2 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour2", "00")
-   Local $HotHour3 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour3", "00")
-   Local $HotHour4 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour4", "00")
-   Local $HotHour5 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour5", "00")
-   Local $HotHour6 = IniRead("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour6", "00")
-   Local $HotMin = IniRead("ConanServerUtility.ini", "Daily Restart Minute? 00-59", "HotMin", "01")
-   Local $ExMem = IniRead("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
-   Local $ExMemRestart = IniRead("ConanServerUtility.ini", "Restart On Excessive Memory Use? yes/no", "ExMemRestart", "no")
-   Local $SteamFix = IniRead("ConanServerUtility.ini", "Running Server with Steam Open? (yes/no)", "SteamFix", "no")
-   Local $logRotate = IniRead("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logRotate", "yes")
-   Local $logQuantity = IniRead("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", "10")
-   Local $logHoursBetweenRotate = IniRead("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", "24")
-Else
-   IniWrite("ConanServerUtility.ini", "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", "yes")
-   IniWrite("ConanServerUtility.ini", "Game Server IP", "ListenIP", "127.0.0.1")
-   IniWrite("ConanServerUtility.ini", "Game Server Port", "GamePort", "7777")
-   IniWrite("ConanServerUtility.ini", "Steam Query Port", "QueryPort", "27015")
-   IniWrite("ConanServerUtility.ini", "Server Name", "ServerName", "Conan Server Utility Server")
-   IniWrite("ConanServerUtility.ini", "Server Password", "ServerPass", "")
-   IniWrite("ConanServerUtility.ini", "Admin Password", "AdminPass", "yOuRpaSHeRenoHASHsymbol")
-   IniWrite("ConanServerUtility.ini", "Max Players", "MaxPlayers", "20")
-   IniWrite("ConanServerUtility.ini", "Server Directory. NO TRAILING SLASH", "serverdir", "C:\Game_Servers\Conan_Exiles_Server")
-   IniWrite("ConanServerUtility.ini", "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", "yes")
-   IniWrite("ConanServerUtility.ini", "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", "C:\Game_Servers\SteamCMD")
-   IniWrite("ConanServerUtility.ini", "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", "yes")
-   IniWrite("ConanServerUtility.ini", "Use Remote Restart ?yes/no", "UseRemoteRestart", "no")
-   IniWrite("ConanServerUtility.ini", "Remote Restart Port", "ListenPort", "57520")
-   IniWrite("ConanServerUtility.ini", "Remote Restart Password", "RestartCode", "FVtb2DXgp8SYwj7J")
-   IniWrite("ConanServerUtility.ini", "Restart Server Daily? yes/no", "RestartDaily", "no")
-   IniWrite("ConanServerUtility.ini", "Check for Update Every X Minutes? yes/no", "CheckForUpdate", "yes")
-   IniWrite("ConanServerUtility.ini", "Update Check Interval in Minutes 05-59", "UpdateInterval", "59")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour1", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour2", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour3", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour4", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour5", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Hours? 00-23", "HotHour6", "00")
-   IniWrite("ConanServerUtility.ini", "Daily Restart Minute? 00-59", "HotMin", "01")
-   IniWrite("ConanServerUtility.ini", "Excessive Memory Amount?", "ExMem", "6000000000")
-   IniWrite("ConanServerUtility.ini", "Restart On Excessive Memory Use? yes/no", "ExMemRestart", "no")
-   IniWrite("ConanServerUtility.ini", "Running Server with Steam Open? (yes/no)", "SteamFix", "no")
-   IniWrite("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logRotate", "yes")
-   IniWrite("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", "10")
-   IniWrite("ConanServerUtility.ini", "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", "24")
-   MsgBox(4096, "Default INI File Made", "Please Modify Default Values and Restart Script")
-
-   Exit
-EndIf
-
-If $logHoursBetweenRotate < 1 Then
-	$logHoursBetweenRotate = 1
-EndIf
-
-If $UpdateInterval < 5 AND $CheckForUpdate = "yes" Then
-	$UpdateInterval = 5
-EndIf
-
-OnAutoItExitRegister("Gamercide")
 Global $mNextCheck = _NowCalc()
 Global $sFile = ""
 Global $Server_EXE = "ConanSandboxServer-Win64-Test.exe"
@@ -121,105 +36,12 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-Func RotateLogs()
-	For $i = $logQuantity To 1 Step -1
-		ConsoleWrite($logFile & $i)
-		ConsoleWrite(@CRLF)
-		If FileExists($logFile & $i) Then
-			FileMove($logFile & $i,$logFile & ($i+1),1)
-		EndIf
-	Next
-	If FileExists($logFile & ($logQuantity+1)) Then
-		FileDelete($logFile & ($logQuantity+1))
-	EndIf
-	If FileExists($logFile) Then
-		FileMove($logFile,$logFile & "1",1)
-		FileWriteLine($logFile, _NowCalc() &" Log Files Rotated")
-	EndIf
-EndFunc
+;User Variables
+#include "includes\IniFunc.au3" ;Functions for reading user settings from INI and creating INI
+ReadUini()
 
-Func Gamercide()
-	If @exitMethod <> 1 Then
-	$Shutdown = MsgBox(4100, "Shut Down?","Do you wish to shutdown the server?",10)
-		If $Shutdown = 6 Then
-			FileWriteLine($logFile,  _NowCalc() &" Server Shutdown by User Input from ConanServerUtility Script")
-			CloseServer()
-		EndIf
-		MsgBox(4096, "Thanks for using our Application", "Please visit us at https://gamercide.com",2)
-	EndIf
-	If $UseRemoteRestart = "yes" Then
-		TCPShutdown()
-	EndIf
-	Exit
-EndFunc
-
-Func CloseServer()
-	Local $PID = ProcessExists($ConanPID)
-	ControlSend($ConanhWnd, "", "", "I" & @CR)
-	ControlSend($ConanhWnd, "", "", "I" & @CR)
-	ControlSend($ConanhWnd, "", "", "^C")
-	WinWaitClose($ConanhWnd, "", 60)
-	If $PID Then
-		ProcessClose($PID)
-    EndIf
-	FileDelete($PIDFile)
-	FileDelete($hWndFile)
-EndFunc
-
-Func GetRSS()
-	Local $oXML = ObjCreate("Microsoft.XMLHTTP")
-	$oXML.Open("GET", "http://steamcommunity.com/games/440900/rss/", 0)
-	$oXML.Send
-
-	$sFile = _TempFile(@ScriptDir, '~', '.xml')
-	FileWrite($sFile, $oXML.responseText)
-EndFunc
-
-Func ParseRSS()
-	$sXML = $sFile
-	Local $oXML = ObjCreate("Microsoft.XMLDOM")
-	$oXML.Load($sXML)
-	Local $oNames = $oXML.selectNodes("//rss/channel/item/title")
-	Local $aMyDate, $aMyTime
-	_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
-    Local $cDate = "PATCH "& StringFormat("%02i.%02i.%04i", $aMyDate[3], $aMyDate[2], $aMyDate[1])
-	Local $cFile = @ScriptDir &"\ConanServerUtility_LastUpdate.txt"
-	For $oName In $oNames
-
-		If StringRegExp($oName.text,"(?i)"& $cDate &"(?i)") Then
-				If FileRead($cFile) = $oName.text Then
-					;ConsoleWrite("No New Update" & @CRLF)
-					ExitLoop
-				Else
-					FileDelete($cFile)
-					FileWrite($cFile,$oName.text)
-					Local $PID = ProcessExists($ConanPID)
-					If $PID Then
-						FileWriteLine($logFile, _NowCalc() &" ["& $oName.text &"] Restart for Update Requested by ConanServerUtility Script")
-						CloseServer()
-					EndIf
-					ExitLoop
-				EndIf
-		EndIf
-	Next
-EndFunc
-
-Func UpdateCheck()
-	GetRSS()
-	ParseRSS()
-	FileDelete($sFile)
-EndFunc
-
-Func _TCP_Server_ClientIP($hSocket)
-   Local $pSocketAddress, $aReturn
-   $pSocketAddress = DllStructCreate("short;ushort;uint;char[8]")
-   $aReturn = DllCall("ws2_32.dll", "int", "getpeername", "int", $hSocket, "ptr", DllStructGetPtr($pSocketAddress), "int*", DllStructGetSize($pSocketAddress))
-   If @error Or $aReturn[0] <> 0 Then Return $hSocket
-	  $aReturn = DllCall("ws2_32.dll", "str", "inet_ntoa", "int", DllStructGetData($pSocketAddress, 3))
-   If @error Then Return $hSocket
-	  $pSocketAddress = 0
-   Return $aReturn[0]
-EndFunc ;==>_TCP_Server_ClientIP
+#include "includes\CsuFunc.au3" ;General Functions for Utility. Moved to make navigation of main script easier.
+OnAutoItExitRegister("Gamercide")
 
 If $UseSteamCMD = "yes" Then
 	Local $sFileExists = FileExists($steamcmddir &"\steamcmd.exe")
