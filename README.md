@@ -18,6 +18,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Optionally restart server on excessive memory use.
 *   Log Excessive memory use. Set to a very large number if you don't wish to log anything
 *   Set Game Name, Game IP, Game port, max players, Server Password, and Admin Password
+*   Rotate X number of logs created by utility every X hours
     
 # Conan Remote Restart Features
 *   If enabled on the server, use to remotely restart the server.
