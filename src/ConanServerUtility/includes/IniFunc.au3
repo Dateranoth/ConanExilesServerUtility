@@ -189,9 +189,11 @@ Func iniFileCheck()
 		FileMove($iniFile, $iniFile &"_"& $iniDate & ".bak", 1)
 		UpdateIni()
 		MsgBox(4096, "INI MISMATCH", "Found " & $iniFail & " Missing Variables" & @CRLF & @CRLF & "Backup created and all existing settings transfered to new INI." & @CRLF & @CRLF & "Modify INI and restart.")
+		Exit
 	Else
 		UpdateIni()
 		MsgBox(4096, "Default INI File Made", "Please Modify Default Values and Restart Script")
+		Exit
 	EndIf
 EndFunc   ;==>iniFileCheck
 
