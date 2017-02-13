@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.3.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.3.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.4.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.4.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 11, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.7.3
+#AutoIt3Wrapper_Res_Fileversion=2.7.4
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -45,7 +45,7 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.3 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.4 Started")
 
 ;User Variables
 Func ReadUini()
@@ -401,7 +401,7 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 	$oHTTPOST.Send($sJsonMessage)
 	Local $oStatusCode = $oHTTPOST.Status
 	Local $oResponseText = $oHTTPOST.ResponseText
-	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot]" & $oStatusCode & "] " & $oResponseText)
+	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} Message Response " & $oResponseText)
 EndFunc   ;==>SendDiscordMsg
 
 Func GetRSS()
@@ -566,7 +566,10 @@ While True
 			EndIf
 		EndIf
 		If $CheckForUpdate = "yes" Then
-			UpdateCheck()
+			Local $bFirstCheck = UpdateCheck()
+			If (Not $bFirstCheck) Then
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date. ")
+			EndIf
 		EndIf
 		If $BindIP = "no" Then
 			$ConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $Server_EXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & $AdminPass & " -ServerPassword=" & $ServerPass & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log")
@@ -649,18 +652,18 @@ While True
 
 	If $sUseDiscordBot = "yes" Then
 		If $iBeginDelayedShutdown = 1 Then
-			Local $sDiscordBotMessage = $ServerName & " Update Required. Restarting in " & $iDiscordBotNotifyTime & " minutes"
+			Local $sDiscordBotMessage = $ServerName & " Restarting in " & $iDiscordBotNotifyTime & " minutes"
 			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			$iBeginDelayedShutdown = 2
 			$mNextCheck = _NowCalc()
-		ElseIf $iBeginDelayedShutdown >= 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $iDiscordBotNotifyTime) Then
-			Local $sDiscordBotMessage = $ServerName & " Update Required. Server Restarting NOW"
+		ElseIf ($iBeginDelayedShutdown >= 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $iDiscordBotNotifyTime)) Then
+			Local $sDiscordBotMessage = $ServerName & " Restarting NOW"
 			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			$iBeginDelayedShutdown = 0
 			$mNextCheck = _NowCalc()
 			CloseServer()
 		ElseIf $iBeginDelayedShutdown = 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= ($iDiscordBotNotifyTime - 1)) Then
-			Local $sDiscordBotMessage = $ServerName & " Update Required. Restarting in 1 minute. Final Warning"
+			Local $sDiscordBotMessage = $ServerName & " Restarting in 1 minute. Final Warning"
 			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			$iBeginDelayedShutdown = 3
 		EndIf
