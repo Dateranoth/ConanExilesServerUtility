@@ -86,6 +86,11 @@ Func ReadUini()
 	Global $logRotate = IniRead($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logRotate", $iniCheck)
 	Global $logQuantity = IniRead($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $iniCheck)
 	Global $logHoursBetweenRotate = IniRead($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $iniCheck)
+	Global $sUseDiscordBot = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $iniCheck)
+	Global $sDiscordWebHookURL = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $iniCheck)
+	Global $sDiscordBotName = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $iniCheck)
+	Global $bDiscordBotUseTTS = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $iniCheck)
+	Global $sDiscordBotAvatar = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $iniCheck)
 
 	If $iniCheck = $BindIP Then
 		$BindIP = "yes"
@@ -218,6 +223,26 @@ Func ReadUini()
 	ElseIf $logHoursBetweenRotate < 1 Then
 		$logHoursBetweenRotate = 1
 	EndIf
+	If $iniCheck = $sUseDiscordBot Then
+		$sUseDiscordBot = "no"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $sDiscordWebHookURL Then
+		$sDiscordWebHookURL = "https://discordapp.com/api/webhooks/XXXXXX/XXXX <- NO TRAILING SLASH AND USE FULL URL FROM WEBHOOK URL ON DISCORD"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $sDiscordBotName Then
+		$sDiscordBotName = "Conan Exiles Discord Bot"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $bDiscordBotUseTTS Then
+		$bDiscordBotUseTTS = "yes"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $sDiscordBotAvatar Then
+		$sDiscordBotAvatar = ""
+		$iniFail += 1
+	EndIf
 	If $iniFail > 0 Then
 		iniFileCheck()
 	EndIf
@@ -271,6 +296,11 @@ Func UpdateIni()
 	IniWrite($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logRotate", $logRotate)
 	IniWrite($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $logQuantity)
 	IniWrite($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $logHoursBetweenRotate)
+	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $sUseDiscordBot)
+	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $sDiscordWebHookURL)
+	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $sDiscordBotName)
+	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $bDiscordBotUseTTS)
+	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $sDiscordBotAvatar)
 EndFunc   ;==>UpdateIni
 
 Func Gamercide()
@@ -341,6 +371,22 @@ Func _GetRSS_ErrFunc($oError)
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - No User Input - Script Continuing. Update check will be ran again at set interval.")
 	EndSelect
 EndFunc   ;==>_GetRSS_ErrFunc
+
+Func _Discord_ErrFunc($oError)
+	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Error: 0x" & Hex($oError.number) & " While Sending Discord Bot Message.")
+EndFunc   ;==>_Discord_ErrFunc
+
+Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $sBotAvatar = "")
+	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_Discord_ErrFunc")
+	Local $sJsonMessage = '{"content" : "' & $sBotMessage & '", "username" : "' & $sBotName & '", "tts" : "' & $sBotTTS & '", "avatar_url" : "' & $sBotAvatar & '"}'
+	Local $oHTTPOST = ObjCreate("WinHttp.WinHttpRequest.5.1")
+	$oHTTPOST.Open("POST", $sHookURL, False)
+	$oHTTPOST.SetRequestHeader("Content-Type", "application/json")
+	$oHTTPOST.Send($sJsonMessage)
+	Local $oStatusCode = $oHTTPOST.Status
+	Local $oResponseText = $oHTTPOST.ResponseText
+	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot]" & $oStatusCode & "] " & $oResponseText)
+EndFunc   ;==>SendDiscordMsg
 
 Func GetRSS()
 	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_GetRSS_ErrFunc")
