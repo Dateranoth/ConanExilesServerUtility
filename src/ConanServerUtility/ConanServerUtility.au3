@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.2.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.2.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.3.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.3.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 11, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.7.2.0
+#AutoIt3Wrapper_Res_Fileversion=2.7.3
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -22,7 +22,7 @@ Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=No
 
 Global $mNextCheck = _NowCalc()
 Global $timeCheck1 = _NowCalc()
-Global $timeCheck2 = _NowCalc
+Global $timeCheck2 = _NowCalc()
 Global $sFile = ""
 Global $Server_EXE = "ConanSandboxServer-Win64-Test.exe"
 Global $PIDFile = @ScriptDir & "\ConanServerUtility_lastpid_tmp"
@@ -43,7 +43,8 @@ If FileExists($hWndFile) Then
 Else
 	Global $ConanhWnd = "0"
 EndIf
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.2 Started")
+
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.3 Started")
 
 ;User Variables
 Func ReadUini()
@@ -312,19 +313,23 @@ Func CloseServer()
 EndFunc   ;==>CloseServer
 
 Func RotateLogs()
+	Local $hCreateTime = _NowCalc
 	For $i = $logQuantity To 1 Step -1
-		ConsoleWrite($logFile & $i)
-		ConsoleWrite(@CRLF)
 		If FileExists($logFile & $i) Then
+			$hCreateTime = FileGetTime($logFile & $i, 1)
 			FileMove($logFile & $i, $logFile & ($i + 1), 1)
+			FileSetTime($logFile & ($i + 1), $hCreateTime, 1)
 		EndIf
 	Next
 	If FileExists($logFile & ($logQuantity + 1)) Then
 		FileDelete($logFile & ($logQuantity + 1))
 	EndIf
 	If FileExists($logFile) Then
+		$hCreateTime = FileGetTime($logFile, 1)
 		FileMove($logFile, $logFile & "1", 1)
+		FileSetTime($logFile & "1", $hCreateTime, 1)
 		FileWriteLine($logFile, _NowCalc() & " Log Files Rotated")
+		FileSetTime($logFile, _NowCalc(),1)
 	EndIf
 EndFunc   ;==>RotateLogs
 
@@ -561,6 +566,7 @@ While True
 	If ($logRotate = "yes") And ((_DateDiff('h', $logStartTime, _NowCalc())) >= 1) Then
 		If Not FileExists($logFile) Then
 			FileWriteLine($logFile, $logStartTime & " Log File Created")
+			FileSetTime($logFile, _NowCalc(), 1)
 		EndIf
 		Local $logFileTime = FileGetTime($logFile, 1)
 		Local $logTimeSinceCreation = _DateDiff('h', $logFileTime[0] & "/" & $logFileTime[1] & "/" & $logFileTime[2] & " " & $logFileTime[3] & ":" & $logFileTime[4] & ":" & $logFileTime[5], _NowCalc())
