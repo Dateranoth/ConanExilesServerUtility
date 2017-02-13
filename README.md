@@ -4,13 +4,15 @@ Created and Compiled with [AutoIT](https://www.autoitscript.com)
 Originally written for use on [Gamercide's](https://gamercide.org) Server
 
  Automate your Conan Server Management with this Utility! Written using AutoIT with full Source available.
-
+ 
+ **UPDATE CHECK REQUIRES THE SCRIPT CAN READ FROM** http://steamcommunity.com/games/440900/rss/
+ 
 # Conan Server Utility Features
 *   Manage Multiple servers with multiple Utilities (See Below)
 *   Monitors for crashes and Restarts Server if process closes
 *   Optionally Enable fix to close DLL error that comes up if Steam is open when starting server
 *   Optionally Disable MULTIHOME to fix some connection problems
-*   Optionally Check RSS feed from Conan Devs and Restart if Update Detected (In 5 to 59 minute intervals)
+*   Optionally Check RSS feed from Conan Devs and Restart if Update Detected (In 5 to 59 minute intervals) 
 *   Optionally Restart the server daily at a certain time (Up to 6 different times through the day)
 *   Optionally Use Remote Restart Utility to Restart server remotely using unique password and port
 *   Optionally Use SteamCMD to automatically update server
