@@ -32,6 +32,7 @@ Global $logStartTime = _NowCalc()
 Global $iniFile = @ScriptDir & "\ConanServerUtility.ini"
 Global $iniFail = 0
 Global $iShutdown = 0
+Global $iBeginDelayedShutdown = 0
 
 If FileExists($PIDFile) Then
 	Global $ConanPID = FileRead($PIDFile)
@@ -91,7 +92,7 @@ Func ReadUini()
 	Global $sDiscordBotName = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $iniCheck)
 	Global $bDiscordBotUseTTS = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $iniCheck)
 	Global $sDiscordBotAvatar = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $iniCheck)
-
+	Global $iDiscordBotNotifyTime = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotTimeBeforeRestart", $iniCheck)
 	If $iniCheck = $BindIP Then
 		$BindIP = "yes"
 		$iniFail += 1
@@ -243,8 +244,17 @@ Func ReadUini()
 		$sDiscordBotAvatar = ""
 		$iniFail += 1
 	EndIf
+	If $iniCheck = $iDiscordBotNotifyTime Then
+		$iDiscordBotNotifyTime = "5"
+		$iniFail += 2
+	ElseIf $iDiscordBotNotifyTime < 1 Then
+		$iDiscordBotNotifyTime = 1
+	EndIf
 	If $iniFail > 0 Then
 		iniFileCheck()
+	EndIf
+	If  $bDiscordBotUseTTS = "yes" Then
+		$bDiscordBotUseTTS = true
 	EndIf
 EndFunc   ;==>ReadUini
 
@@ -301,6 +311,7 @@ Func UpdateIni()
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $sDiscordBotName)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $bDiscordBotUseTTS)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $sDiscordBotAvatar)
+	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotTimeBeforeRestart", $iDiscordBotNotifyTime)
 EndFunc   ;==>UpdateIni
 
 Func Gamercide()
@@ -426,8 +437,9 @@ Func ParseRSS()
 				FileDelete($cFile)
 				FileWrite($cFile, $oName.text)
 				If ProcessExists($ConanPID) Then
-					FileWriteLine($logFile, _NowCalc() & " [" & $oName.text & "] Restart [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Out of Date - Requested by ConanServerUtility Script")
-					CloseServer()
+					FileWriteLine($logFile, _NowCalc() & " New Update [" & $oName.text & "] Found for Server [" & $ServerName & " (PID: " & $ConanPID & ")]")
+					;CloseServer()
+					Return "Update_Required"
 				EndIf
 				ExitLoop
 			EndIf
@@ -437,10 +449,15 @@ EndFunc   ;==>ParseRSS
 
 Func UpdateCheck()
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Starting. Will Log if Update Found.")
-	GetRSS()
+	Local $sUpdateCheck = GetRSS()
 	If FileExists($sFile) Then
 		ParseRSS()
 		FileDelete($sFile)
+	EndIf
+	If $sUpdateCheck = "Update_Required" Then
+		Return "Update_Required"
+	Else
+		Return "NO_Update"
 	EndIf
 EndFunc   ;==>UpdateCheck
 
@@ -525,6 +542,7 @@ While True
 
 
 	If Not ProcessExists($ConanPID) Then
+		$iBeginDelayedShutdown = 0
 		If $UseSteamCMD = "yes" Then
 			If $validategame = "yes" Then
 				FileWriteLine($logFile, _NowCalc() & " Running SteamCMD with validate. [steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 validate +quit]")
@@ -599,9 +617,38 @@ While True
 		$timeCheck2 = _NowCalc()
 	EndIf
 
-	If ($CheckForUpdate = "yes") And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $UpdateInterval) Then
-		UpdateCheck()
+	If ($CheckForUpdate = "yes") And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $UpdateInterval) And ($iBeginDelayedShutdown = 0) Then
+		Local $sCheckUpdate = UpdateCheck()
+		If $sCheckUpdate = "NO_Update" Then
+			;Maybe Log?
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
+		ElseIf "Update_Required" and $sUseDiscordBot = "yes" Then
+			$iBeginDelayedShutdown = 1
+		Else
+			CloseServer()
+		EndIf
 		$mNextCheck = _NowCalc()
+	EndIf
+
+	If $sUseDiscordBot = "yes" Then
+		If $iBeginDelayedShutdown = 1 Then
+			Local $sDiscordBotMessage = $ServerName & " Update Required. Restarting in " & $iDiscordBotNotifyTime & " minutes"
+			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+			$iBeginDelayedShutdown = 2
+			$mNextCheck = _NowCalc()
+		ElseIf $iBeginDelayedShutdown >= 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $iDiscordBotNotifyTime) Then
+			Local $sDiscordBotMessage = $ServerName & " Update Required. Server Restarting NOW"
+			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+			$iBeginDelayedShutdown = 0
+			$mNextCheck = _NowCalc()
+			CloseServer()
+		ElseIf $iBeginDelayedShutdown = 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= ($iDiscordBotNotifyTime - 1)) Then
+			Local $sDiscordBotMessage = $ServerName & " Update Required. Restarting in 1 minute. Final Warning"
+			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+			$iBeginDelayedShutdown = 3
+		EndIf
+	Else
+		$iBeginDelayedShutdown = 0
 	EndIf
 
 	If ($logRotate = "yes") And ((_DateDiff('h', $logStartTime, _NowCalc())) >= 1) Then
@@ -616,5 +663,5 @@ While True
 		$logStartTime = _NowCalc()
 	EndIf
 
-	Sleep(500)
+	Sleep(1000)
 WEnd
