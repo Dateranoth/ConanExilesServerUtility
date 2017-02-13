@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.2.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.2.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 11, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.7.1.0
+#AutoIt3Wrapper_Res_Fileversion=2.7.2.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -31,6 +31,7 @@ Global $logFile = @ScriptDir & "\ConanServerUtility.log"
 Global $logStartTime = _NowCalc()
 Global $iniFile = @ScriptDir & "\ConanServerUtility.ini"
 Global $iniFail = 0
+Global $iShutdown = 0
 
 If FileExists($PIDFile) Then
 	Global $ConanPID = FileRead($PIDFile)
@@ -327,11 +328,35 @@ Func RotateLogs()
 	EndIf
 EndFunc   ;==>RotateLogs
 
+Func _GetRSS_ErrFunc($oError)
+	If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
+	$iMsgBoxAnswer = MsgBox(4, "Error: 0x" & Hex($oError.number), "Something went wrong checking for the Server Update." & @CRLF & @CRLF & "Check the Log files for more information" & @CRLF & @CRLF & "This window will close and script will continue in 60 seconds." & @CRLF & @CRLF & "Close Script Now?", 60)
+	Select
+		Case $iMsgBoxAnswer = 6 ;Yes
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - ConanServerUtility Shutdown - Intiated by User")
+			$iShutdown = 1
+		Case $iMsgBoxAnswer = 7 ;No
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - User Input - Script Continuing. Update check will be ran again at set interval.")
+		Case $iMsgBoxAnswer = -1 ;Timeout
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - No User Input - Script Continuing. Update check will be ran again at set interval.")
+	EndSelect
+EndFunc   ;==>_GetRSS_ErrFunc
+
 Func GetRSS()
+	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_GetRSS_ErrFunc")
 	Local $oXML = ObjCreate("Microsoft.XMLHTTP")
+	If @error Then
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Error Creating HTTP XML Object")
+		If $iShutdown = 1 Then Exit
+		Return
+	EndIf
 	$oXML.Open("GET", "http://steamcommunity.com/games/440900/rss/", 0)
 	$oXML.Send
-
+	If @error Then
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Error Sending GET Request to http://steamcommunity.com/games/440900/rss/")
+		If $iShutdown = 1 Then Exit
+		Return
+	EndIf
 	$sFile = _TempFile(@ScriptDir, '~', '.xml')
 	FileWrite($sFile, $oXML.responseText)
 EndFunc   ;==>GetRSS
@@ -346,17 +371,16 @@ Func ParseRSS()
 	Local $cDate = "PATCH " & StringFormat("%02i.%02i.%04i", $aMyDate[3], $aMyDate[2], $aMyDate[1])
 	Local $cFile = @ScriptDir & "\ConanServerUtility_LastUpdate.txt"
 	For $oName In $oNames
-
 		If StringRegExp($oName.text, "(?i)" & $cDate & "(?i)") Then
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] - Update released today. Is the server up to date?")
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update released today. Is the server up to date?")
 			If FileRead($cFile) = $oName.text Then
-				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] - Server is Up to Date")
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
 				ExitLoop
 			Else
 				FileDelete($cFile)
 				FileWrite($cFile, $oName.text)
 				If ProcessExists($ConanPID) Then
-					FileWriteLine($logFile, _NowCalc() & " [" & $oName.text & "] Restart [" & $ServerName & " (PID: " & $ConanPID & ")] - Server is Out of Date - Requested by ConanServerUtility Script")
+					FileWriteLine($logFile, _NowCalc() & " [" & $oName.text & "] Restart [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Out of Date - Requested by ConanServerUtility Script")
 					CloseServer()
 				EndIf
 				ExitLoop
@@ -366,10 +390,10 @@ Func ParseRSS()
 EndFunc   ;==>ParseRSS
 
 Func UpdateCheck()
-	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] - Update Check Starting. Will Log if Update Found.")
+	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Starting. Will Log if Update Found.")
 	GetRSS()
-	ParseRSS()
 	If FileExists($sFile) Then
+		ParseRSS()
 		FileDelete($sFile)
 	EndIf
 EndFunc   ;==>UpdateCheck
@@ -417,11 +441,11 @@ If $UseRemoteRestart = "yes" Then
 	Local $MainSocket = TCPListen($g_IP, $g_Port, 100)
 	If $MainSocket = -1 Then
 		MsgBox(0x0, "TCP Error", "Could not bind to [" & $g_IP & "] Check server IP or disable Remote Restart in INI")
-		FileWriteLine($logFile, _NowCalc() & " Remote Restart Enabled. Could not bind to "& $g_IP &":"& $g_Port)
+		FileWriteLine($logFile, _NowCalc() & " Remote Restart Enabled. Could not bind to " & $g_IP & ":" & $g_Port)
 		Exit
 	Else
-		FileWriteLine($logFile, _NowCalc() & " Remote Restart Enabled. Listening for Restart Request at "& $g_IP &":"& $g_Port)
-	Endif
+		FileWriteLine($logFile, _NowCalc() & " Remote Restart Enabled. Listening for Restart Request at " & $g_IP & ":" & $g_Port)
+	EndIf
 EndIf
 
 While True
@@ -443,7 +467,7 @@ While True
 					EndIf
 				Else
 					Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
-					FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] - Restart ATTEMPT by Remote Host: " & $IP & " WRONG PASSWORD: " & $RECV)
+					FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Restart ATTEMPT by Remote Host: " & $IP & " WRONG PASSWORD: " & $RECV)
 					ExitLoop
 				EndIf
 				$Count += 1
@@ -476,7 +500,7 @@ While True
 		EndIf
 		If @error Or Not $ConanPID Then
 			If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
-			$iMsgBoxAnswer = MsgBox(262405,"Server Failed to Start","The server tried to start, but it failed. Try again? This will automatically close in 60 seconds and try to start again.",60)
+			$iMsgBoxAnswer = MsgBox(262405, "Server Failed to Start", "The server tried to start, but it failed. Try again? This will automatically close in 60 seconds and try to start again.", 60)
 			Select
 				Case $iMsgBoxAnswer = 4 ;Retry
 					FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server Failed to Start. User Initiated a Restart Attempt.")
