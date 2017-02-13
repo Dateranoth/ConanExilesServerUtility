@@ -43,7 +43,7 @@ If FileExists($hWndFile) Then
 Else
 	Global $ConanhWnd = "0"
 EndIf
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.2 Started")
 
 ;User Variables
 Func ReadUini()
