@@ -432,6 +432,7 @@ Func ParseRSS()
 	_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
 	Local $cDate = "PATCH " & StringFormat("%02i.%02i.%04i", $aMyDate[3], $aMyDate[2], $aMyDate[1])
 	Local $cFile = @ScriptDir & "\ConanServerUtility_LastUpdate.txt"
+	Local $bReturn = False
 	For $oName In $oNames
 		If StringRegExp($oName.text, "(?i)" & $cDate & "(?i)") Then
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update released today. Is the server up to date?")
@@ -444,25 +445,32 @@ Func ParseRSS()
 				If ProcessExists($ConanPID) Then
 					FileWriteLine($logFile, _NowCalc() & " New Update [" & $oName.text & "] Found for Server [" & $ServerName & " (PID: " & $ConanPID & ")]")
 					;CloseServer()
-					Return "Update_Required"
+					$bReturn = True
 				EndIf
 				ExitLoop
 			EndIf
 		EndIf
 	Next
+	If $bReturn Then
+		Return True
+	Else
+		Return False
+	Endif
 EndFunc   ;==>ParseRSS
 
 Func UpdateCheck()
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Starting. Will Log if Update Found.")
-	Local $sUpdateCheck = GetRSS()
+	GetRSS()
 	If FileExists($sFile) Then
-		ParseRSS()
+		Local $bUpdate = ParseRSS()
 		FileDelete($sFile)
-	EndIf
-	If $sUpdateCheck = "Update_Required" Then
-		Return "Update_Required"
+		If $bUpdate Then
+			Return True
+		Else
+			Return False
+		EndIf
 	Else
-		Return "NO_Update"
+		Return False
 	EndIf
 EndFunc   ;==>UpdateCheck
 
@@ -613,21 +621,25 @@ While True
 		$timeCheck1 = _NowCalc()
 	EndIf
 
-	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('h', $timeCheck2, _NowCalc())) >= 1)) Then
+	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('h', $timeCheck2, _NowCalc())) >= 1)) And ($iBeginDelayedShutdown = 0) Then
 		If ProcessExists($ConanPID) Then
 			Local $MEM = ProcessGetStats($ConanPID, 0)
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
-			CloseServer()
+			If ($sUseDiscordBot = "yes") Then
+				$iBeginDelayedShutdown = 1
+				$mNextCheck = _NowCalc
+			Else
+				CloseServer()
+			EndIf
 		EndIf
 		$timeCheck2 = _NowCalc()
 	EndIf
 
 	If ($CheckForUpdate = "yes") And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $UpdateInterval) And ($iBeginDelayedShutdown = 0) Then
-		Local $sCheckUpdate = UpdateCheck()
-		If $sCheckUpdate = "NO_Update" Then
-			;Maybe Log?
+		Local $bRestart = UpdateCheck()
+		If (Not $bRestart) Then
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
-		ElseIf "Update_Required" and $sUseDiscordBot = "yes" Then
+		ElseIf $bRestart And ($sUseDiscordBot = "yes") Then
 			$iBeginDelayedShutdown = 1
 		Else
 			CloseServer()
