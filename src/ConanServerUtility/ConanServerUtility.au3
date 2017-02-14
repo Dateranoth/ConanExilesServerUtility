@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.4.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.4.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 11, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 13, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.7.4
+#AutoIt3Wrapper_Res_Fileversion=2.8
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -45,7 +45,7 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.4 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8 Started")
 
 ;User Variables
 Func ReadUini()
@@ -254,8 +254,8 @@ Func ReadUini()
 	If $iniFail > 0 Then
 		iniFileCheck()
 	EndIf
-	If  $bDiscordBotUseTTS = "yes" Then
-		$bDiscordBotUseTTS = true
+	If $bDiscordBotUseTTS = "yes" Then
+		$bDiscordBotUseTTS = True
 	EndIf
 EndFunc   ;==>ReadUini
 
@@ -370,7 +370,7 @@ Func RotateLogs()
 		FileMove($logFile, $logFile & "1", 1)
 		FileSetTime($logFile & "1", $hCreateTime, 1)
 		FileWriteLine($logFile, _NowCalc() & " Log Files Rotated")
-		FileSetTime($logFile, _NowCalc(),1)
+		FileSetTime($logFile, _NowCalc(), 1)
 	EndIf
 EndFunc   ;==>RotateLogs
 
@@ -396,7 +396,7 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_Discord_ErrFunc")
 	Local $sJsonMessage = '{"content" : "' & $sBotMessage & '", "username" : "' & $sBotName & '", "tts" : "' & $sBotTTS & '", "avatar_url" : "' & $sBotAvatar & '"}'
 	Local $oHTTPOST = ObjCreate("WinHttp.WinHttpRequest.5.1")
-	$oHTTPOST.Open("POST", $sHookURL, False)
+	$oHTTPOST.Open("POST", $sHookURL & "?wait=true", False)
 	$oHTTPOST.SetRequestHeader("Content-Type", "application/json")
 	$oHTTPOST.Send($sJsonMessage)
 	Local $oStatusCode = $oHTTPOST.Status
@@ -455,7 +455,7 @@ Func ParseRSS()
 		Return True
 	Else
 		Return False
-	Endif
+	EndIf
 EndFunc   ;==>ParseRSS
 
 Func UpdateCheck()
@@ -653,6 +653,7 @@ While True
 	If $sUseDiscordBot = "yes" Then
 		If $iBeginDelayedShutdown = 1 Then
 			Local $sDiscordBotMessage = $ServerName & " Restarting in " & $iDiscordBotNotifyTime & " minutes"
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Discord Bot In Use. Delaying Shutdown for " & $iDiscordBotNotifyTime & " minutes. Notifying Channel")
 			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			$iBeginDelayedShutdown = 2
 			$mNextCheck = _NowCalc()
