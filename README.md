@@ -21,6 +21,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Log Excessive memory use. Set to a very large number if you don't wish to log anything
 *   Set Game Name, Game IP, Game port, max players, Server Password, and Admin Password
 *   Rotate X number of logs created by utility every X hours
+*   Notify Discord Channel before Restart using Webhook
     
 # Conan Remote Restart Features
 *   If enabled on the server, use to remotely restart the server.
@@ -33,3 +34,34 @@ A few things to note. The Game Server IP will be the IP you wish to bind to. Thi
 
 # Running Multiple Servers on the Same Machine
 Place a copy of the EXE in a different Conan_Server directory, update the INI file to make sure you have no port conflicts, and run the script.  A couple of things you might want to do to help manage two or more running at once. Change the ConanServerUtility.exe names to something Utility1 and Utility2 or something like that. Also, you probably should set the Minute about 30 minutes apart from each so they are not restarting at the same time. 
+
+# How to Use Discord Bot
+* UseDiscordBot
+ * Set to yes to notify Discord Channel before Server Restart
+* DiscordWebHookURL
+ * This is your Webhook  URL provided by discord. ( Instructions below for Desktop Application )
+    1. Right Click on your server
+    2. Open Server Settings > Webhooks
+    3. Click Create Webhook
+    4. Select which Channel you want the bot to announce to (Important)
+    5. Under Webhook URL Click the Copy Button next to the URL
+    6. Paste the entire Webhook to the INI after DiscordWebHookURL=
+* DiscordBotName
+ * This will override the Name you setup in your webhook. Leave Blank to use default.
+* DiscordBotUseTTS
+ * Yes will make the bot announce with Text to Speech. No will turn off TTS
+* DiscrodBotAvatarLink
+ * This is a fully qualified URL to an Image for the Bot Avatar. Will override default. Leave blank for default.
+* DiscordBotTimeBeforeRestart
+ * Time in Minutes that the Bot will make the first announcement to the channel before Server Restart.
+
+The Bot will announce immediately upon restart time. Notifying how long users have based on the time you set. The bot will then announce 1 minute before the server restarts. Finally, the bot will announce exactly as the restart command is sent. Announcements will be sent for Daily Restarts and Update Restarts. Remote Restarts are considered Admin controlled and immediately restart the server without notice.
+```
+[Use Discord Bot to Send Message Before Restart? yes/no]
+UseDiscordBot=yes
+DiscordWebHookURL=https://discordapp.com/api/webhooks/XXXXXXXXXXXXXXXXX/XXXXXXXX_XXXXX
+DiscordBotName=Conan Test Bot
+DiscordBotUseTTS=yes
+DiscordBotAvatarLink=
+DiscordBotTimeBeforeRestart=5
+```
