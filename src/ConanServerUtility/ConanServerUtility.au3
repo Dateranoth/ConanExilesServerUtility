@@ -624,7 +624,7 @@ While True
 		$timeCheck1 = _NowCalc()
 	EndIf
 
-	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('h', $timeCheck2, _NowCalc())) >= 1)) And ($iBeginDelayedShutdown = 0) Then
+	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('n', $timeCheck2, _NowCalc())) >= 1)) And ($iBeginDelayedShutdown = 0) Then
 		If ProcessExists($ConanPID) Then
 			Local $MEM = ProcessGetStats($ConanPID, 0)
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
