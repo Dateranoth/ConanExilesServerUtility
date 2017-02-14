@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.3.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.3.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.7.3.1.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.7.3.1.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 11, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 13, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.7.3
+#AutoIt3Wrapper_Res_Fileversion=2.7.3.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -44,7 +44,7 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.3 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.7.3.1 Started")
 
 ;User Variables
 Func ReadUini()
@@ -549,7 +549,7 @@ While True
 		$timeCheck1 = _NowCalc()
 	EndIf
 
-	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('h', $timeCheck2, _NowCalc())) >= 1)) Then
+	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('n', $timeCheck2, _NowCalc())) >= 1)) Then
 		If ProcessExists($ConanPID) Then
 			Local $MEM = ProcessGetStats($ConanPID, 0)
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
