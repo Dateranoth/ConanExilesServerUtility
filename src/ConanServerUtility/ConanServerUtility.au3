@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 13, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 14, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.8
+#AutoIt3Wrapper_Res_Fileversion=2.8.6
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -45,7 +45,7 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6 Started")
 
 ;User Variables
 Func ReadUini()
@@ -72,6 +72,7 @@ Func ReadUini()
 	Global $UseRemoteRestart = IniRead($iniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $iniCheck)
 	Global $g_Port = IniRead($iniFile, "Remote Restart Port", "ListenPort", $iniCheck)
 	Global $RestartCode = IniRead($iniFile, "Remote Restart Password", "RestartCode", $iniCheck)
+	Global $sObfuscatePass = IniRead($iniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $iniCheck)
 	Global $RestartDaily = IniRead($iniFile, "Restart Server Daily? yes/no", "RestartDaily", $iniCheck)
 	Global $CheckForUpdate = IniRead($iniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $iniCheck)
 	Global $UpdateInterval = IniRead($iniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $iniCheck)
@@ -151,7 +152,11 @@ Func ReadUini()
 		$iniFail += 1
 	EndIf
 	If $iniCheck = $RestartCode Then
-		$RestartCode &= "_yourcode"
+		$RestartCode = "Admin1_" & $RestartCode
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $sObfuscatePass Then
+		$sObfuscatePass = "yes"
 		$iniFail += 1
 	EndIf
 	If $iniCheck = $RestartDaily Then
@@ -291,6 +296,7 @@ Func UpdateIni()
 	IniWrite($iniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $UseRemoteRestart)
 	IniWrite($iniFile, "Remote Restart Port", "ListenPort", $g_Port)
 	IniWrite($iniFile, "Remote Restart Password", "RestartCode", $RestartCode)
+	IniWrite($iniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $sObfuscatePass)
 	IniWrite($iniFile, "Restart Server Daily? yes/no", "RestartDaily", $RestartDaily)
 	IniWrite($iniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $CheckForUpdate)
 	IniWrite($iniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $UpdateInterval)
@@ -354,7 +360,7 @@ Func CloseServer()
 EndFunc   ;==>CloseServer
 
 Func RotateLogs()
-	Local $hCreateTime = _NowCalc
+	Local $hCreateTime = _NowCalc()
 	For $i = $logQuantity To 1 Step -1
 		If FileExists($logFile & $i) Then
 			$hCreateTime = FileGetTime($logFile & $i, 1)
@@ -474,6 +480,39 @@ Func UpdateCheck()
 	EndIf
 EndFunc   ;==>UpdateCheck
 
+Func PassCheck($sPass, $sPassString)
+	Local $aPassReturn[3] = [False, "", ""]
+	Local $aPasswords = StringSplit($sPassString, ",")
+	for $i = 1 To $aPasswords[0]
+		If (StringCompare($sPass, $aPasswords[$i], 1) = 0) Then
+			Local $aUserPass = StringSplit($aPasswords[$i], "_")
+			If $aUserPass[0] > 1 Then
+				$aPassReturn[0] = True
+				$aPassReturn[1] = $aUserPass[1]
+				$aPassReturn[2] = $aUserPass[2]
+			Else
+				$aPassReturn[0] = True
+				$aPassReturn[1] = "Anonymous"
+				$aPassReturn[2] = $aUserPass[1]
+			EndIf
+		ExitLoop
+		EndIf
+	Next
+Return $aPassReturn
+EndFunc
+
+Func ObfPass($sObfPassString)
+	Local $sObfPass = ""
+ 	for $i = 1 To (StringLen($sObfPassString) - 3)
+		If $i <> 4 Then
+			$sObfPass = $sObfPass & "*"
+		Else
+			$sObfPass = $sObfPass & StringMid($sObfPassString, 4, 4)
+		EndIf
+	Next
+	Return $sObfPass
+EndFunc
+
 Func _TCP_Server_ClientIP($hSocket)
 	Local $pSocketAddress, $aReturn
 	$pSocketAddress = DllStructCreate("short;ushort;uint;char[8]")
@@ -530,20 +569,23 @@ While True
 		If $ConnectedSocket >= 0 Then
 			$Count = 0
 			While $Count < 30
-				$RECV = TCPRecv($ConnectedSocket, 512)
-				$PassCompare = StringCompare($RECV, $RestartCode, 1)
-				If $PassCompare = 0 Then
+				Local $sRECV = TCPRecv($ConnectedSocket, 512)
+				Local $aPassCompare = PassCheck($sRECV, $RestartCode)
+				If $sObfuscatePass = "yes" Then
+					$aPassCompare[2] = ObfPass($aPassCompare[2])
+				EndIf
+				If $aPassCompare[0] Then
 					If ProcessExists($ConanPID) Then
 						Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
 						Local $MEM = ProcessGetStats($ConanPID, 0)
-						FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1] & " - Restart Requested by Remote Host: " & $IP)
+						FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Work Memory:" & $MEM[0] & " | Peak Memory:" & $MEM[1] & "] Restart Requested by Remote Host: " & $IP & " | User: " & $aPassCompare[1] & " | Pass: " & $aPassCompare[2])
 						CloseServer()
 						Sleep(10000)
 						ExitLoop
 					EndIf
 				Else
 					Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
-					FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Restart ATTEMPT by Remote Host: " & $IP & " WRONG PASSWORD: " & $RECV)
+					FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Restart ATTEMPT by Remote Host: " & $IP & " | Unknown Restart Code: " & $sRECV)
 					ExitLoop
 				EndIf
 				$Count += 1
@@ -573,10 +615,18 @@ While True
 		EndIf
 		If $BindIP = "no" Then
 			$ConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $Server_EXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & $AdminPass & " -ServerPassword=" & $ServerPass & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log")
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Started [" & $Server_EXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & $AdminPass & " -ServerPassword=" & $ServerPass & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
+			If $sObfuscatePass = "yes" Then
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Started [" & $Server_EXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & ObfPass($AdminPass) & " -ServerPassword=" & ObfPass($ServerPass) & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
+			Else
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Started [" & $Server_EXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & $AdminPass & " -ServerPassword=" & $ServerPass & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
+			EndIf
 		Else
 			$ConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $Server_EXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & $AdminPass & " -ServerPassword=" & $ServerPass & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log")
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Started [" & $Server_EXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & $AdminPass & " -ServerPassword=" & $ServerPass & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
+			If $sObfuscatePass = "yes" Then
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Started [" & $Server_EXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & ObfPass($AdminPass) & " -ServerPassword=" & ObfPass($ServerPass) & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
+			Else
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Started [" & $Server_EXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -AdminPassword=" & $AdminPass & " -ServerPassword=" & $ServerPass & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
+			EndIf
 		EndIf
 		If @error Or Not $ConanPID Then
 			If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
