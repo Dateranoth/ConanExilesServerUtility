@@ -14,7 +14,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Optionally Disable MULTIHOME to fix some connection problems
 *   Optionally Check RSS feed from Conan Devs and Restart if Update Detected (In 5 to 59 minute intervals) 
 *   Optionally Restart the server daily at a certain time (Up to 6 different times through the day)
-*   Optionally Use Remote Restart Utility to Restart server remotely using unique password and port
+*   Optionally Use Remote Restart Utility to Restart server remotely using unique passwords (Optionally Set Users) and port
 *   Optionally Use SteamCMD to automatically update server
 *   Optionally run verification every time SteamCMD is ran
 *   Optionally restart server on excessive memory use.
@@ -65,3 +65,37 @@ DiscordBotUseTTS=yes
 DiscordBotAvatarLink=
 DiscordBotTimeBeforeRestart=5
 ```
+
+## Using Multiple Restart Codes
+
+You can set multiple anonymous user passwords by separating each with a comma `,`
+`RestartCode=pass1,pass2,pass3`
+
+You can specify the user in the password string by separating user from password with underscore `_`
+`RestartCode=User1_Pass1,User2_Pass2`
+
+Or you can mix methods
+`RestartCode=User1_Pass1,pass2,User2_Pass2`
+
+On the Remote Restart Utility the user will enter the full string regardless of using the username or not. The user name is there mainly for logging purposes. To trigger a restart the full string between the comma , has to match.
+
+## Examples:
+`RestartCode=pass1,pass2,pass3,Admin1_pass4`
+* User enters *pass1* in Restart Utility:
+  * Server resets and Log displays: Anonymous user @ IP triggered restart using pass1 ( Hidden by default )
+* User enters *Admin1_pass4* in Restart Utility
+  * Server resets and Log displays: Admin1 @ IP triggered restart using pass4 ( Hidden by default )
+* User enters *wrongpassword* in Restart Utility
+  * Server does NOT reset and Log displays: Restart Attempt @ IP using string *wrongpassword* (failed attempts are always shown in full)
+* User enters *Admin1_wrongpassword*
+  * Server does NOT reset and Log displays: Restart Attempt @ IP using string *Admin1_wrongpassword* (failed attempts are always shown in full)
+
+# Hide Passwords in Log
+Additionally, I have added the option to Obfuscate passwords in the log files. Currently that is done by replacing all except 4 characters starting with the 4th character with *
+
+`ObfuscatePass="no"` to display full passwords in log.
+
+## Example:
+`ObfuscatePass="yes"` and `AdminPass=aPasWd123`
+
+Log displays `AdminPass=***sWd1**`
