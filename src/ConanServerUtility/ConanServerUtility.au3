@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 13, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 14, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.8
+#AutoIt3Wrapper_Res_Fileversion=2.8.6
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -45,7 +45,7 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6 Started")
 
 ;User Variables
 Func ReadUini()
@@ -360,7 +360,7 @@ Func CloseServer()
 EndFunc   ;==>CloseServer
 
 Func RotateLogs()
-	Local $hCreateTime = _NowCalc
+	Local $hCreateTime = _NowCalc()
 	For $i = $logQuantity To 1 Step -1
 		If FileExists($logFile & $i) Then
 			$hCreateTime = FileGetTime($logFile & $i, 1)
