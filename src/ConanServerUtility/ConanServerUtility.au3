@@ -410,6 +410,61 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} Message Response " & $oResponseText)
 EndFunc   ;==>SendDiscordMsg
 
+#Region ;**** Post to Twitch Chat Functions ****
+Func TwitchConnect($sTBotNick, $sTBotPass)
+	Local $aTwitchReturn[3] = [False, "", Null]
+	Local $sTwitchIRC = TCPConnect(TCPNameToIP("irc.chat.twitch.tv"), 6667)
+	If @error Then
+		TCPCloseSocket($sTwitchIRC)
+		Return $aTwitchReturn
+	Else
+		TCPSend($sTwitchIRC, "PASS " & StringLower($sTBotPass) & @CRLF)
+		TCPSend($sTwitchIRC, "NICK " & StringLower($sTBotNick) & @CRLF)
+		Local $sTwitchReceive = ""
+		Local $iTimer1 = TimerInit()
+		While TimerDiff($iTimer1) < 2000
+			$sTwitchReceive &= TCPRecv($sTwitchIRC, 1)
+			If @error Then ExitLoop
+		WEnd
+		Local $aTwitchReceiveLines = StringSplit($sTwitchReceive, @CRLF, 1)
+		If StringRegExp($aTwitchReceiveLines[$aTwitchReceiveLines[0] - 1], "(?i):tmi.twitch.tv 376 " & $sTBotNick & " :>") Then
+			$aTwitchReturn[0] = True
+			$aTwitchReturn[1] = $aTwitchReceiveLines[1]
+			$aTwitchReturn[2] = $sTwitchIRC
+		Else
+			Return $aTwitchReturn
+		EndIf
+	EndIf
+	Return $aTwitchReturn
+EndFunc   ;==>TwitchConnect
+
+Func SendTwitchMsg($sT_Nick, $sT_OAuth, $sT_Channels, $sT_Message, $sT_Log = @ScriptDir & "\TwitchMessage.log")
+	Local $aTwitchSock = TwitchConnect($sT_Nick, $sT_OAuth)
+	If $aTwitchSock[0] Then
+		FileWriteLine($sT_Log, "Connection to Twitch IRC Successful. Partial Response: " & $aTwitchSock[1])
+		Local $aTwitchChannels = StringSplit($sT_Channels, ",")
+		For $i = 1 To $aTwitchChannels[0]
+			TCPSend($aTwitchSock[2], "PRIVMSG #" & StringLower($aTwitchChannels[$i]) & " :" & $sT_Message & @CRLF)
+			If @error Then
+				TCPCloseSocket($aTwitchSock[2])
+				FileWriteLine($sT_Log, "Error Sending Message to " & $aTwitchChannels[$i])
+				ExitLoop
+			Else
+				FileWriteLine($sT_Log, "Successfully sent Message to " & $aTwitchChannels[$i])
+					Sleep(1600)
+				Else
+					Sleep(100)
+				EndIf
+			EndIf
+		Next
+		TCPSend($aTwitchSock[2], "EXIT")
+		TCPCloseSocket($aTwitchSock[2])
+	Else
+		FileWriteLine($sT_Log, "Failed Connection to Twitch IRC with Nick " & $sTwitchNick)
+	EndIf
+EndFunc   ;==>SendTwitchMsg
+#EndRegion
+
 Func GetRSS()
 	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_GetRSS_ErrFunc")
 	Local $oXML = ObjCreate("Microsoft.XMLHTTP")
