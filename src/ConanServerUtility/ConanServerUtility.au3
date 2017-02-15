@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.1.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.1.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 14, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.8.6
+#AutoIt3Wrapper_Res_Fileversion=2.8.6.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -45,7 +45,7 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6.1 Started")
 
 ;User Variables
 Func ReadUini()
@@ -434,13 +434,13 @@ Func ParseRSS()
 	Local $oXML = ObjCreate("Microsoft.XMLDOM")
 	$oXML.Load($sXML)
 	Local $oNames = $oXML.selectNodes("//rss/channel/item/title")
-	Local $aMyDate, $aMyTime
-	_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
-	Local $cDate = "PATCH " & StringFormat("%02i.%02i.%04i", $aMyDate[3], $aMyDate[2], $aMyDate[1])
+	;Local $aMyDate, $aMyTime
+	;_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
+	;Local $cDate = "PATCH " & StringFormat("%02i.%02i.%04i", $aMyDate[3], $aMyDate[2], $aMyDate[1])
 	Local $cFile = @ScriptDir & "\ConanServerUtility_LastUpdate.txt"
 	Local $bReturn = False
 	For $oName In $oNames
-		If StringRegExp($oName.text, "(?i)" & $cDate & "(?i)") Then
+		If StringRegExp($oName.text, "(?i)PATCH(?i)") Then
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update released today. Is the server up to date?")
 			If FileRead($cFile) = $oName.text Then
 				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
