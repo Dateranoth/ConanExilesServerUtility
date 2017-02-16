@@ -412,60 +412,72 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} Message Response " & $oResponseText)
 EndFunc   ;==>SendDiscordMsg
 
-#Region ;**** Post to Twitch Chat Functions ****
-Func TwitchConnect($sTBotNick, $sTBotPass)
-	Local $aTwitchReturn[3] = [False, "", Null]
+#Region ;**** Post to Twitch Chat Function ****
+Opt("TCPTimeout", 500)
+Func SendTwitchMsg($sT_Nick, $sT_OAuth, $sT_Channels, $sT_Message)
+	Local $aTwitchReturn[4] = [False, False, "", False]
 	Local $sTwitchIRC = TCPConnect(TCPNameToIP("irc.chat.twitch.tv"), 6667)
 	If @error Then
 		TCPCloseSocket($sTwitchIRC)
 		Return $aTwitchReturn
 	Else
-		TCPSend($sTwitchIRC, "PASS " & StringLower($sTBotPass) & @CRLF)
-		TCPSend($sTwitchIRC, "NICK " & StringLower($sTBotNick) & @CRLF)
+		$aTwitchReturn[0] = True ;Successfully Connected to irc
+		TCPSend($sTwitchIRC, "PASS " & StringLower($sT_OAuth) & @CRLF)
+		TCPSend($sTwitchIRC, "NICK " & StringLower($sT_Nick) & @CRLF)
 		Local $sTwitchReceive = ""
 		Local $iTimer1 = TimerInit()
-		While TimerDiff($iTimer1) < 2000
+		While TimerDiff($iTimer1) < 1000
 			$sTwitchReceive &= TCPRecv($sTwitchIRC, 1)
 			If @error Then ExitLoop
 		WEnd
 		Local $aTwitchReceiveLines = StringSplit($sTwitchReceive, @CRLF, 1)
-		If StringRegExp($aTwitchReceiveLines[$aTwitchReceiveLines[0] - 1], "(?i):tmi.twitch.tv 376 " & $sTBotNick & " :>") Then
-			$aTwitchReturn[0] = True
-			$aTwitchReturn[1] = $aTwitchReceiveLines[1]
-			$aTwitchReturn[2] = $sTwitchIRC
+		$aTwitchReturn[2] = $aTwitchReceiveLines[1] ;Status Line. Accepted or Not
+		If StringRegExp($aTwitchReceiveLines[$aTwitchReceiveLines[0] - 1], "(?i):tmi.twitch.tv 376 " & $sT_Nick & " :>") Then
+			$aTwitchReturn[1] = True ;Username and OAuth was accepted. Ready for PRIVMSG
+			Local $aTwitchChannels = StringSplit($sT_Channels, ",")
+			For $i = 1 To $aTwitchChannels[0]
+				TCPSend($sTwitchIRC, "PRIVMSG #" & StringLower($aTwitchChannels[$i]) & " :" & $sT_Message & @CRLF)
+				If @error Then
+					TCPCloseSocket($sTwitchIRC)
+					$aTwitchReturn[3] = False ;Check that all channels succeeded or none
+					Return $aTwitchReturn
+					ExitLoop
+				Else
+					$aTwitchReturn[3] = True ;Check that all channels succeeded or none
+						Sleep(1600)
+					Else
+						Sleep(100)
+					EndIf
+				EndIf
+			Next
+			TCPSend($sTwitchIRC, "QUIT")
+			TCPCloseSocket($sTwitchIRC)
 		Else
 			Return $aTwitchReturn
 		EndIf
 	EndIf
 	Return $aTwitchReturn
-EndFunc   ;==>TwitchConnect
-
-Func SendTwitchMsg($sT_Nick, $sT_OAuth, $sT_Channels, $sT_Message, $sT_Log = @ScriptDir & "\TwitchMessage.log")
-	Local $aTwitchSock = TwitchConnect($sT_Nick, $sT_OAuth)
-	If $aTwitchSock[0] Then
-		FileWriteLine($sT_Log, "Connection to Twitch IRC Successful. Partial Response: " & $aTwitchSock[1])
-		Local $aTwitchChannels = StringSplit($sT_Channels, ",")
-		For $i = 1 To $aTwitchChannels[0]
-			TCPSend($aTwitchSock[2], "PRIVMSG #" & StringLower($aTwitchChannels[$i]) & " :" & $sT_Message & @CRLF)
-			If @error Then
-				TCPCloseSocket($aTwitchSock[2])
-				FileWriteLine($sT_Log, "Error Sending Message to " & $aTwitchChannels[$i])
-				ExitLoop
-			Else
-				FileWriteLine($sT_Log, "Successfully sent Message to " & $aTwitchChannels[$i])
-					Sleep(1600)
-				Else
-					Sleep(100)
-				EndIf
-			EndIf
-		Next
-		TCPSend($aTwitchSock[2], "EXIT")
-		TCPCloseSocket($aTwitchSock[2])
-	Else
-		FileWriteLine($sT_Log, "Failed Connection to Twitch IRC with Nick " & $sTwitchNick)
-	EndIf
 EndFunc   ;==>SendTwitchMsg
-#EndRegion
+
+Func TwitchMsgLog($sT_Msg)
+	Local $aTwitchIRC = SendTwitchMsg($sTwitchNick, $sChatOAuth, $sTwitchChannels, $sT_Msg)
+	If $aTwitchIRC[0] Then
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Twitch Bot] Successfully Connected to Twitch IRC")
+		If $aTwitchIRC[1] Then
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Twitch Bot] Username and OAuth Accepted. [" & $aTwitchIRC[2] & "]")
+			If $aTwitchIRC[3] Then
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Twitch Bot] Successfully sent ( " & $sT_Msg & " ) to all Channels")
+			Else
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Twitch Bot] ERROR | Failed sending message ( " & $sT_Msg & " ) to one or more channels")
+			EndIf
+		Else
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Twitch Bot] ERROR | Username and OAuth Denied [" & $aTwitchIRC[2] & "]")
+		EndIf
+	Else
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Twitch Bot] ERROR | Could not connect to Twitch IRC. Is this URL or port blocked? [irc.chat.twitch.tv:6667]")
+	EndIf
+EndFunc   ;==>TwitchMsg
+#EndRegion ;**** Post to Twitch Chat Function ****
 
 Func GetRSS()
 	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_GetRSS_ErrFunc")
