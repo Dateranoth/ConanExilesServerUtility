@@ -261,8 +261,6 @@ Func ReadUini()
 	EndIf
 	If $bDiscordBotUseTTS = "yes" Then
 		$bDiscordBotUseTTS = True
-	Else
-		$bDiscordBotUseTTS = False
 	EndIf
 EndFunc   ;==>ReadUini
 
@@ -443,13 +441,16 @@ Func ParseRSS()
 	Local $bReturn = False
 	For $oName In $oNames
 		If StringRegExp($oName.text, "(?i)PATCH(?i)") Then
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update released today. Is the server up to date?")
 			If FileRead($cFile) = $oName.text Then
-				$bReturn = False
+				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
 				ExitLoop
 			Else
 				FileDelete($cFile)
 				FileWrite($cFile, $oName.text)
 				If ProcessExists($ConanPID) Then
+					FileWriteLine($logFile, _NowCalc() & " New Update [" & $oName.text & "] Found for Server [" & $ServerName & " (PID: " & $ConanPID & ")]")
+					;CloseServer()
 					$bReturn = True
 				EndIf
 				ExitLoop
@@ -693,9 +694,7 @@ While True
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
 		ElseIf $bRestart And ($sUseDiscordBot = "yes") Then
 			$iBeginDelayedShutdown = 1
-			FileWriteLine($logFile, _NowCalc() & " New Update [" & $oName.text & "] Found for Server [" & $ServerName & " (PID: " & $ConanPID & ")]")
 		Else
-			FileWriteLine($logFile, _NowCalc() & " New Update [" & $oName.text & "] Found for Server [" & $ServerName & " (PID: " & $ConanPID & ")]")
 			CloseServer()
 		EndIf
 		$mNextCheck = _NowCalc()
