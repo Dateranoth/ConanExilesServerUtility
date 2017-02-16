@@ -444,6 +444,7 @@ Func SendTwitchMsg($sT_Nick, $sT_OAuth, $sT_Channels, $sT_Message)
 					ExitLoop
 				Else
 					$aTwitchReturn[3] = True ;Check that all channels succeeded or none
+					If $aTwitchChannels[0] > 17 Then ;This is to make sure we don't break the rate limit
 						Sleep(1600)
 					Else
 						Sleep(100)
