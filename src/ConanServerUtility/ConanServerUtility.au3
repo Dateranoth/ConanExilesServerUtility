@@ -261,6 +261,8 @@ Func ReadUini()
 	EndIf
 	If $bDiscordBotUseTTS = "yes" Then
 		$bDiscordBotUseTTS = True
+	Else
+		$bDiscordBotUseTTS = False
 	EndIf
 EndFunc   ;==>ReadUini
 
