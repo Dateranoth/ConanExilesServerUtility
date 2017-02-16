@@ -1,10 +1,10 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.2.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.2.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 14, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 12, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
 #AutoIt3Wrapper_Res_Fileversion=2.8.6.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
@@ -45,7 +45,7 @@ Else
 	Global $ConanhWnd = "0"
 EndIf
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6.1 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6.2 Started")
 
 ;User Variables
 Func ReadUini()
@@ -376,7 +376,7 @@ Func RotateLogs()
 		FileMove($logFile, $logFile & "1", 1)
 		FileSetTime($logFile & "1", $hCreateTime, 1)
 		FileWriteLine($logFile, _NowCalc() & " Log Files Rotated")
-		FileSetTime($logFile, _NowCalc(), 1)
+		FileSetTime($logFile, @YEAR & @MON & @MDAY, 1)
 	EndIf
 EndFunc   ;==>RotateLogs
 
@@ -725,7 +725,7 @@ While True
 	If ($logRotate = "yes") And ((_DateDiff('h', $logStartTime, _NowCalc())) >= 1) Then
 		If Not FileExists($logFile) Then
 			FileWriteLine($logFile, $logStartTime & " Log File Created")
-			FileSetTime($logFile, _NowCalc(), 1)
+			FileSetTime($logFile, @YEAR & @MON & @MDAY, 1)
 		EndIf
 		Local $logFileTime = FileGetTime($logFile, 1)
 		Local $logTimeSinceCreation = _DateDiff('h', $logFileTime[0] & "/" & $logFileTime[1] & "/" & $logFileTime[2] & " " & $logFileTime[3] & ":" & $logFileTime[4] & ":" & $logFileTime[5], _NowCalc())
