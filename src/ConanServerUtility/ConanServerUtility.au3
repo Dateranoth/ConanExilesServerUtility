@@ -365,7 +365,7 @@ Func UpdateIni()
 	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchNick", $sTwitchNick)
 	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "ChatOAuth", $sChatOAuth)
 	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchChannels", $sTwitchChannels)
-	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotNotifyTime", $iTwitchBotNotifyTime)
+	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotTimeBeforeRestart", $iTwitchBotNotifyTime)
 EndFunc   ;==>UpdateIni
 #EndRegion ;**** INI Settings - User Variables ****
 
