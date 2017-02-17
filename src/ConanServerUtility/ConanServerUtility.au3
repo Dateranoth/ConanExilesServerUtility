@@ -20,6 +20,7 @@ Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=No
 #include <MsgBoxConstants.au3>
 #include <File.au3>
 
+#Region ;**** Global Variables ****
 Global $mNextCheck = _NowCalc()
 Global $timeCheck1 = _NowCalc()
 Global $timeCheck2 = _NowCalc()
@@ -33,6 +34,7 @@ Global $iniFile = @ScriptDir & "\ConanServerUtility.ini"
 Global $iniFail = 0
 Global $iShutdown = 0
 Global $iBeginDelayedShutdown = 0
+Global $iDelayShutdownTime = 0
 
 If FileExists($PIDFile) Then
 	Global $ConanPID = FileRead($PIDFile)
@@ -44,10 +46,9 @@ If FileExists($hWndFile) Then
 Else
 	Global $ConanhWnd = "0"
 EndIf
+#EndRegion ;**** Global Variables ****
 
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6.2 Started")
-
-;User Variables
+#Region ;**** INI Settings - User Variables ****
 Func ReadUini()
 	Local $iniCheck = ""
 	Local $aChar[3]
@@ -95,6 +96,12 @@ Func ReadUini()
 	Global $bDiscordBotUseTTS = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $iniCheck)
 	Global $sDiscordBotAvatar = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $iniCheck)
 	Global $iDiscordBotNotifyTime = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotTimeBeforeRestart", $iniCheck)
+	Global $sUseTwitchBot = IniRead($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "UseTwitchBot", $iniCheck)
+	Global $sTwitchNick = IniRead($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchNick", $iniCheck)
+	Global $sChatOAuth = IniRead($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "ChatOAuth", $iniCheck)
+	Global $sTwitchChannels = IniRead($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchChannels", $iniCheck)
+	Global $iTwitchBotNotifyTime = IniRead($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotTimeBeforeRestart", $iniCheck)
+
 	If $iniCheck = $BindIP Then
 		$BindIP = "yes"
 		$iniFail += 1
@@ -252,18 +259,51 @@ Func ReadUini()
 	EndIf
 	If $iniCheck = $iDiscordBotNotifyTime Then
 		$iDiscordBotNotifyTime = "5"
-		$iniFail += 2
+		$iniFail += 1
 	ElseIf $iDiscordBotNotifyTime < 1 Then
 		$iDiscordBotNotifyTime = 1
+	EndIf
+	If $iniCheck = $sUseTwitchBot Then
+		$sUseTwitchBot = "no"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $sTwitchNick Then
+		$sTwitchNick = "twitchbotusername"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $sChatOAuth Then
+		$sChatOAuth = "oauth:1234 (Generate OAuth Token Here: https://twitchapps.com/tmi)"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $sTwitchChannels Then
+		$sTwitchChannels = "channel1,channel2,channel3"
+		$iniFail += 1
+	EndIf
+	If $iniCheck = $iTwitchBotNotifyTime Then
+		$iTwitchBotNotifyTime = "5"
+		$iniFail += 1
+	ElseIf $iTwitchBotNotifyTime < 1 Then
+		$iTwitchBotNotifyTime = 1
 	EndIf
 	If $iniFail > 0 Then
 		iniFileCheck()
 	EndIf
+
 	If $bDiscordBotUseTTS = "yes" Then
 		$bDiscordBotUseTTS = True
 	Else
 		$bDiscordBotUseTTS = False
 	EndIf
+
+	If ($sUseDiscordBot = "yes") Then
+		$iDelayShutdownTime = $iDiscordBotNotifyTime
+		If ($sUseTwitchBot = "yes") And ($iTwitchBotNotifyTime > $iDelayShutdownTime) Then
+			$iDelayShutdownTime = $iTwitchBotNotifyTime
+		EndIf
+	Else
+		$iDelayShutdownTime = $iTwitchBotNotifyTime
+	EndIf
+
 EndFunc   ;==>ReadUini
 
 Func iniFileCheck()
@@ -321,7 +361,13 @@ Func UpdateIni()
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $bDiscordBotUseTTS)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $sDiscordBotAvatar)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotTimeBeforeRestart", $iDiscordBotNotifyTime)
+	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "UseTwitchBot", $sUseTwitchBot)
+	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchNick", $sTwitchNick)
+	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "ChatOAuth", $sChatOAuth)
+	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchChannels", $sTwitchChannels)
+	IniWrite($iniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotNotifyTime", $iTwitchBotNotifyTime)
 EndFunc   ;==>UpdateIni
+#EndRegion ;**** INI Settings - User Variables ****
 
 Func Gamercide()
 	If @exitMethod <> 1 Then
@@ -382,20 +428,7 @@ Func RotateLogs()
 	EndIf
 EndFunc   ;==>RotateLogs
 
-Func _GetRSS_ErrFunc($oError)
-	If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
-	$iMsgBoxAnswer = MsgBox(4, "Error: 0x" & Hex($oError.number), "Something went wrong checking for the Server Update." & @CRLF & @CRLF & "Check the Log files for more information" & @CRLF & @CRLF & "This window will close and script will continue in 60 seconds." & @CRLF & @CRLF & "Close Script Now?", 60)
-	Select
-		Case $iMsgBoxAnswer = 6 ;Yes
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - ConanServerUtility Shutdown - Intiated by User")
-			$iShutdown = 1
-		Case $iMsgBoxAnswer = 7 ;No
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - User Input - Script Continuing. Update check will be ran again at set interval.")
-		Case $iMsgBoxAnswer = -1 ;Timeout
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - No User Input - Script Continuing. Update check will be ran again at set interval.")
-	EndSelect
-EndFunc   ;==>_GetRSS_ErrFunc
-
+#Region ;**** Function to Send Message to Discord ****
 Func _Discord_ErrFunc($oError)
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Error: 0x" & Hex($oError.number) & " While Sending Discord Bot Message.")
 EndFunc   ;==>_Discord_ErrFunc
@@ -411,6 +444,7 @@ Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $
 	Local $oResponseText = $oHTTPOST.ResponseText
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} Message Response " & $oResponseText)
 EndFunc   ;==>SendDiscordMsg
+#EndRegion ;**** Function to Send Message to Discord ****
 
 #Region ;**** Post to Twitch Chat Function ****
 Opt("TCPTimeout", 500)
@@ -477,8 +511,23 @@ Func TwitchMsgLog($sT_Msg)
 	Else
 		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Twitch Bot] ERROR | Could not connect to Twitch IRC. Is this URL or port blocked? [irc.chat.twitch.tv:6667]")
 	EndIf
-EndFunc   ;==>TwitchMsg
+EndFunc   ;==>TwitchMsgLog
 #EndRegion ;**** Post to Twitch Chat Function ****
+
+#Region ;**** Functions to Check for Update ****
+Func _GetRSS_ErrFunc($oError)
+	If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
+	$iMsgBoxAnswer = MsgBox(4, "Error: 0x" & Hex($oError.number), "Something went wrong checking for the Server Update." & @CRLF & @CRLF & "Check the Log files for more information" & @CRLF & @CRLF & "This window will close and script will continue in 60 seconds." & @CRLF & @CRLF & "Close Script Now?", 60)
+	Select
+		Case $iMsgBoxAnswer = 6 ;Yes
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - ConanServerUtility Shutdown - Intiated by User")
+			$iShutdown = 1
+		Case $iMsgBoxAnswer = 7 ;No
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - User Input - Script Continuing. Update check will be ran again at set interval.")
+		Case $iMsgBoxAnswer = -1 ;Timeout
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - No User Input - Script Continuing. Update check will be ran again at set interval.")
+	EndSelect
+EndFunc   ;==>_GetRSS_ErrFunc
 
 Func GetRSS()
 	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_GetRSS_ErrFunc")
@@ -549,11 +598,13 @@ Func UpdateCheck()
 		Return False
 	EndIf
 EndFunc   ;==>UpdateCheck
+#EndRegion ;**** Functions to Check for Update ****
 
+#Region ;**** Functions for Multiple Passwords and Hiding Password
 Func PassCheck($sPass, $sPassString)
 	Local $aPassReturn[3] = [False, "", ""]
 	Local $aPasswords = StringSplit($sPassString, ",")
-	for $i = 1 To $aPasswords[0]
+	For $i = 1 To $aPasswords[0]
 		If (StringCompare($sPass, $aPasswords[$i], 1) = 0) Then
 			Local $aUserPass = StringSplit($aPasswords[$i], "_")
 			If $aUserPass[0] > 1 Then
@@ -565,15 +616,15 @@ Func PassCheck($sPass, $sPassString)
 				$aPassReturn[1] = "Anonymous"
 				$aPassReturn[2] = $aUserPass[1]
 			EndIf
-		ExitLoop
+			ExitLoop
 		EndIf
 	Next
-Return $aPassReturn
-EndFunc
+	Return $aPassReturn
+EndFunc   ;==>PassCheck
 
 Func ObfPass($sObfPassString)
 	Local $sObfPass = ""
- 	for $i = 1 To (StringLen($sObfPassString) - 3)
+	For $i = 1 To (StringLen($sObfPassString) - 3)
 		If $i <> 4 Then
 			$sObfPass = $sObfPass & "*"
 		Else
@@ -581,7 +632,8 @@ Func ObfPass($sObfPassString)
 		EndIf
 	Next
 	Return $sObfPass
-EndFunc
+EndFunc   ;==>ObfPass
+#EndRegion ;**** Functions for Multiple Passwords and Hiding Password
 
 Func _TCP_Server_ClientIP($hSocket)
 	Local $pSocketAddress, $aReturn
@@ -595,6 +647,7 @@ Func _TCP_Server_ClientIP($hSocket)
 EndFunc   ;==>_TCP_Server_ClientIP
 
 OnAutoItExitRegister("Gamercide")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6.2 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -748,7 +801,7 @@ While True
 		If ProcessExists($ConanPID) Then
 			Local $MEM = ProcessGetStats($ConanPID, 0)
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
-			If ($sUseDiscordBot = "yes") Then
+			If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
 				$iBeginDelayedShutdown = 1
 				$mNextCheck = _NowCalc
 			Else
@@ -762,7 +815,7 @@ While True
 		Local $bRestart = UpdateCheck()
 		If (Not $bRestart) Then
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
-		ElseIf $bRestart And ($sUseDiscordBot = "yes") Then
+		ElseIf $bRestart And ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
 			$iBeginDelayedShutdown = 1
 		Else
 			CloseServer()
@@ -770,22 +823,37 @@ While True
 		$mNextCheck = _NowCalc()
 	EndIf
 
-	If $sUseDiscordBot = "yes" Then
+	If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
 		If $iBeginDelayedShutdown = 1 Then
-			Local $sDiscordBotMessage = $ServerName & " Restarting in " & $iDiscordBotNotifyTime & " minutes"
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Discord Bot In Use. Delaying Shutdown for " & $iDiscordBotNotifyTime & " minutes. Notifying Channel")
-			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Bot in Use. Delaying Shutdown for " & $iDelayShutdownTime & " minutes. Notifying Channel")
+			Local $sShutdownMessage = $ServerName & " Restarting in " & $iDelayShutdownTime & " minutes"
+			If $sUseDiscordBot = "yes" Then
+				SendDiscordMsg($sDiscordWebHookURL, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+			EndIf
+			If $sUseTwitchBot = "yes" Then
+				TwitchMsgLog($sShutdownMessage)
+			EndIf
 			$iBeginDelayedShutdown = 2
 			$mNextCheck = _NowCalc()
-		ElseIf ($iBeginDelayedShutdown >= 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $iDiscordBotNotifyTime)) Then
-			Local $sDiscordBotMessage = $ServerName & " Restarting NOW"
-			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+		ElseIf ($iBeginDelayedShutdown >= 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $iDelayShutdownTime)) Then
+			Local $sShutdownMessage = $ServerName & " Restarting NOW"
+			If $sUseDiscordBot = "yes" Then
+				SendDiscordMsg($sDiscordWebHookURL, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+			EndIf
+			If $sUseTwitchBot = "yes" Then
+				TwitchMsgLog($sShutdownMessage)
+			EndIf
 			$iBeginDelayedShutdown = 0
 			$mNextCheck = _NowCalc()
 			CloseServer()
-		ElseIf $iBeginDelayedShutdown = 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= ($iDiscordBotNotifyTime - 1)) Then
-			Local $sDiscordBotMessage = $ServerName & " Restarting in 1 minute. Final Warning"
-			SendDiscordMsg($sDiscordWebHookURL, $sDiscordBotMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+		ElseIf $iBeginDelayedShutdown = 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= ($iDelayShutdownTime - 1)) Then
+			Local $sShutdownMessage = $ServerName & " Restarting in 1 minute. Final Warning"
+			If $sUseDiscordBot = "yes" Then
+				SendDiscordMsg($sDiscordWebHookURL, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+			EndIf
+			If $sUseTwitchBot = "yes" Then
+				TwitchMsgLog($sShutdownMessage)
+			EndIf
 			$iBeginDelayedShutdown = 3
 		EndIf
 	Else
