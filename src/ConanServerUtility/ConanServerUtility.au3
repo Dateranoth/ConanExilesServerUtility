@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.2.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.2.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.6.5.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.6.5.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 12, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 17, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.8.6.1
+#AutoIt3Wrapper_Res_Fileversion=2.8.6.5
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -647,7 +647,7 @@ Func _TCP_Server_ClientIP($hSocket)
 EndFunc   ;==>_TCP_Server_ClientIP
 
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6.2 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.6.5 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
