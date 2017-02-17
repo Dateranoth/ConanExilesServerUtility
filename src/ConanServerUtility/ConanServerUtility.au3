@@ -436,34 +436,25 @@ Func ParseRSS()
 	Local $oXML = ObjCreate("Microsoft.XMLDOM")
 	$oXML.Load($sXML)
 	Local $oNames = $oXML.selectNodes("//rss/channel/item/title")
-	;Local $aMyDate, $aMyTime
-	;_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
-	;Local $cDate = "PATCH " & StringFormat("%02i.%02i.%04i", $aMyDate[3], $aMyDate[2], $aMyDate[1])
 	Local $cFile = @ScriptDir & "\ConanServerUtility_LastUpdate.txt"
 	Local $bReturn = False
 	For $oName In $oNames
 		If StringRegExp($oName.text, "(?i)PATCH(?i)") Then
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update released today. Is the server up to date?")
 			If FileRead($cFile) = $oName.text Then
-				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
+				$bReturn = False
 				ExitLoop
 			Else
 				FileDelete($cFile)
 				FileWrite($cFile, $oName.text)
 				If ProcessExists($ConanPID) Then
 					FileWriteLine($logFile, _NowCalc() & " New Update [" & $oName.text & "] Found for Server [" & $ServerName & " (PID: " & $ConanPID & ")]")
-					;CloseServer()
 					$bReturn = True
 				EndIf
 				ExitLoop
 			EndIf
 		EndIf
 	Next
-	If $bReturn Then
-		Return True
-	Else
-		Return False
-	EndIf
+	Return $bReturn
 EndFunc   ;==>ParseRSS
 
 Func UpdateCheck()
