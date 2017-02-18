@@ -76,9 +76,8 @@ DiscordBotTimeBeforeRestart=5
  * This is the key needed to connect to chat over IRC. You need to generate one for this to work.
     1. Go to this URL https://twitchapps.com/tmi
     2. Connect to your account.
-    3. Click Generate OAuth Key
-    4. Copy the generated key.
-    5. Paste the entire key to the INI after ChatOAuth=
+    3. Copy the generated key.
+    4. Paste the entire key to the INI after ChatOAuth=
 * TwitchChannels
   * These are the channels you wish to send the announcement to. You can send to just one or you can send to multiple channels. Separate each channel with a comma `,` `TwitchChannels=channel1,channel2`
 * TwitchBotTimeBeforeRestart
