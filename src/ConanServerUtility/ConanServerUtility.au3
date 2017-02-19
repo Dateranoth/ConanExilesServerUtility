@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.9.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.9.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.9.1.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.9.1.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 17, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 18, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.9
+#AutoIt3Wrapper_Res_Fileversion=2.9.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -577,6 +577,15 @@ Func GetInstalledVersion($sGameDir)
 EndFunc   ;==>GetInstalledVersion
 
 Func UpdateCheck()
+	If FileExists($steamcmddir & "\app_info.tmp") Then
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Delaying Update Check for 1 minute. | Found Existing " & $steamcmddir & "\app_info.tmp")
+		Sleep(60000)
+		If FileExists($steamcmddir & "\app_info.tmp") Then
+			FileDelete($steamcmddir & "\app_info.tmp")
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Deleted " & $steamcmddir & "\app_info.tmp")
+		EndIf
+	EndIf
+
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Starting.")
 	Local $bUpdateRequired = False
 	Local $aLatestVersion = GetLatestVersion($steamcmddir)
@@ -651,7 +660,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.9 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.9.1 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
