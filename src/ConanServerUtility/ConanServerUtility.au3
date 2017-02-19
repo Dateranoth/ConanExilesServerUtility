@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.8.7.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.8.7.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.9.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.9.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 17, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.8.7
+#AutoIt3Wrapper_Res_Fileversion=2.9
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -14,23 +14,18 @@
 ;by https://gamercide.com on their server
 ;Distributed Under GNU GENERAL PUBLIC LICENSE
 
-Opt("WinTitleMatchMode", 1) ;1=start, 2=subStr, 3=exact, 4=advanced, -1 to -4=Nocase
 #include <Date.au3>
-#include <Process.au3>
-#include <MsgBoxConstants.au3>
-#include <File.au3>
-
 #Region ;**** Global Variables ****
 Global $mNextCheck = _NowCalc()
 Global $timeCheck1 = _NowCalc()
 Global $timeCheck2 = _NowCalc()
-Global $sFile = ""
-Global $Server_EXE = "ConanSandboxServer-Win64-Test.exe"
-Global $PIDFile = @ScriptDir & "\ConanServerUtility_lastpid_tmp"
-Global $hWndFile = @ScriptDir & "\ConanServerUtility_lasthwnd_tmp"
-Global $logFile = @ScriptDir & "\ConanServerUtility.log"
 Global $logStartTime = _NowCalc()
-Global $iniFile = @ScriptDir & "\ConanServerUtility.ini"
+Global $sFile = ""
+Global Const $Server_EXE = "ConanSandboxServer-Win64-Test.exe"
+Global Const $PIDFile = @ScriptDir & "\ConanServerUtility_lastpid_tmp"
+Global Const $hWndFile = @ScriptDir & "\ConanServerUtility_lasthwnd_tmp"
+Global Const $logFile = @ScriptDir & "\ConanServerUtility.log"
+Global Const $iniFile = @ScriptDir & "\ConanServerUtility.ini"
 Global $iniFail = 0
 Global $iShutdown = 0
 Global $iBeginDelayedShutdown = 0
@@ -515,83 +510,98 @@ EndFunc   ;==>TwitchMsgLog
 #EndRegion ;**** Post to Twitch Chat Function ****
 
 #Region ;**** Functions to Check for Update ****
-Func _GetRSS_ErrFunc($oError)
-	If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
-	$iMsgBoxAnswer = MsgBox(4, "Error: 0x" & Hex($oError.number), "Something went wrong checking for the Server Update." & @CRLF & @CRLF & "Check the Log files for more information" & @CRLF & @CRLF & "This window will close and script will continue in 60 seconds." & @CRLF & @CRLF & "Close Script Now?", 60)
-	Select
-		Case $iMsgBoxAnswer = 6 ;Yes
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - ConanServerUtility Shutdown - Intiated by User")
-			$iShutdown = 1
-		Case $iMsgBoxAnswer = 7 ;No
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - User Input - Script Continuing. Update check will be ran again at set interval.")
-		Case $iMsgBoxAnswer = -1 ;Timeout
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Failed - No User Input - Script Continuing. Update check will be ran again at set interval.")
-	EndSelect
-EndFunc   ;==>_GetRSS_ErrFunc
-
-Func GetRSS()
-	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_GetRSS_ErrFunc")
-	Local $oXML = ObjCreate("Microsoft.XMLHTTP")
-	If @error Then
-		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Error Creating HTTP XML Object")
-		If $iShutdown = 1 Then Exit
-		Return
+Func GetLatestVersion($sCmdDir)
+	Local $aReturn[2] = [False, ""]
+	If FileExists($sCmdDir & "\appcache") Then
+		DirRemove($sCmdDir & "\appcache", 1)
 	EndIf
-	$oXML.Open("GET", "http://steamcommunity.com/games/440900/rss/", 0)
-	$oXML.Send
-	If @error Then
-		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Error Sending GET Request to http://steamcommunity.com/games/440900/rss/")
-		If $iShutdown = 1 Then Exit
-		Return
-	EndIf
-	$sFile = _TempFile(@ScriptDir, '~', '.xml')
-	FileWrite($sFile, $oXML.responseText)
-EndFunc   ;==>GetRSS
+	RunWait('"' & @ComSpec & '" /c ' & $sCmdDir & '\steamcmd.exe +login anonymous +app_info_update 1 +app_info_print 443030 +app_info_print 443030 +exit > app_info.tmp', $sCmdDir, @SW_HIDE)
+	Local Const $sFilePath = $sCmdDir & "\app_info.tmp"
+	Local $hFileOpen = FileOpen($sFilePath, 0)
+	If $hFileOpen = -1 Then
+		$aReturn[0] = False
+	Else
+		Local $sFileRead = FileRead($hFileOpen)
+		Local $aAppInfo = StringSplit($sFileRead, '"branches"', 1)
 
-Func ParseRSS()
-	$sXML = $sFile
-	Local $oXML = ObjCreate("Microsoft.XMLDOM")
-	$oXML.Load($sXML)
-	Local $oNames = $oXML.selectNodes("//rss/channel/item/title")
-	Local $cFile = @ScriptDir & "\ConanServerUtility_LastUpdate.txt"
-	Local $bReturn = False
-	For $oName In $oNames
-		If StringRegExp($oName.text, "(?i)PATCH(?i)") Then
-			If FileRead($cFile) = $oName.text Then
-				$bReturn = False
-				ExitLoop
-			Else
-				FileDelete($cFile)
-				FileWrite($cFile, $oName.text)
-				If ProcessExists($ConanPID) Then
-					FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] NEW UPDATE [" & $oName.text & "] Found")
-					$bReturn = True
-				EndIf
-				ExitLoop
-			EndIf
+		If UBound($aAppInfo) >= 3 Then
+			$aAppInfo = StringSplit($aAppInfo[2], "AppID", 1)
 		EndIf
-	Next
-	Return $bReturn
-EndFunc   ;==>ParseRSS
+		If UBound($aAppInfo) >= 2 Then
+			$aAppInfo = StringSplit($aAppInfo[1], "}", 1)
+		EndIf
+		If UBound($aAppInfo) >= 2 Then
+			$aAppInfo = StringSplit($aAppInfo[1], '"', 1)
+		EndIf
+		If UBound($aAppInfo) >= 7 Then
+			$aReturn[0] = True
+			$aReturn[1] = $aAppInfo[6]
+		EndIf
+		FileClose($hFileOpen)
+		If FileExists($sFilePath) Then
+			FileDelete($sFilePath)
+		EndIf
+	EndIf
+	Return $aReturn
+EndFunc   ;==>GetLatestVersion
+
+Func GetInstalledVersion($sGameDir)
+	Local $aReturn[2] = [False, ""]
+	Local Const $sFilePath = $sGameDir & "\steamapps\appmanifest_443030.acf"
+	Local $hFileOpen = FileOpen($sFilePath, 0)
+	If $hFileOpen = -1 Then
+		$aReturn[0] = False
+	Else
+		Local $sFileRead = FileRead($hFileOpen)
+		Local $aAppInfo = StringSplit($sFileRead, '"buildid"', 1)
+
+		If UBound($aAppInfo) >= 3 Then
+			$aAppInfo = StringSplit($aAppInfo[2], '"buildid"', 1)
+		EndIf
+		If UBound($aAppInfo) >= 2 Then
+			$aAppInfo = StringSplit($aAppInfo[1], '"LastOwner"', 1)
+		EndIf
+		If UBound($aAppInfo) >= 2 Then
+			$aAppInfo = StringSplit($aAppInfo[1], '"', 1)
+		EndIf
+		If UBound($aAppInfo) >= 2 Then
+			$aReturn[0] = True
+			$aReturn[1] = $aAppInfo[2]
+		EndIf
+
+		If FileExists($sFilePath) Then
+			FileClose($hFileOpen)
+		EndIf
+	EndIf
+	Return $aReturn
+EndFunc   ;==>GetInstalledVersion
 
 Func UpdateCheck()
-	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Starting. Will Log if Update Found.")
-	GetRSS()
-	If FileExists($sFile) Then
-		Local $bUpdate = ParseRSS()
-		FileDelete($sFile)
-		If $bUpdate Then
-			Return True
+	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Update Check Starting.")
+	Local $bUpdateRequired = False
+	Local $aLatestVersion = GetLatestVersion($steamcmddir)
+	Local $aInstalledVersion = GetInstalledVersion($serverdir)
+
+	If ($aLatestVersion[0] And $aInstalledVersion[0]) Then
+		If StringCompare($aLatestVersion[1], $aInstalledVersion[1]) = 0 Then
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date. Version: " & $aInstalledVersion[1])
 		Else
-			Return False
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Out of Date! Installed Version: " & $aInstalledVersion[1] & " Latest Version: " & $aLatestVersion[1])
+			$bUpdateRequired = True
 		EndIf
-	Else
-		Return False
+	ElseIf Not $aLatestVersion[0] And Not $aInstalledVersion[0] Then
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Something went wrong retrieving Latest Version")
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Something went wrong retrieving Installed Version")
+	ElseIf Not $aInstalledVersion[0] Then
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Something went wrong retrieving Installed Version")
+	ElseIf Not $aLatestVersion[0] Then
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Something went wrong retrieving Latest Version")
 	EndIf
+	Return $bUpdateRequired
 EndFunc   ;==>UpdateCheck
 #EndRegion ;**** Functions to Check for Update ****
 
-#Region ;**** Functions for Multiple Passwords and Hiding Password
+#Region ;**** Functions for Multiple Passwords and Hiding Password ****
 Func PassCheck($sPass, $sPassString)
 	Local $aPassReturn[3] = [False, "", ""]
 	Local $aPasswords = StringSplit($sPassString, ",")
@@ -624,8 +634,9 @@ Func ObfPass($sObfPassString)
 	Next
 	Return $sObfPass
 EndFunc   ;==>ObfPass
-#EndRegion ;**** Functions for Multiple Passwords and Hiding Password
+#EndRegion ;**** Functions for Multiple Passwords and Hiding Password ****
 
+#Region ;**** Function to get IP from Restart Client ****
 Func _TCP_Server_ClientIP($hSocket)
 	Local $pSocketAddress, $aReturn
 	$pSocketAddress = DllStructCreate("short;ushort;uint;char[8]")
@@ -636,9 +647,11 @@ Func _TCP_Server_ClientIP($hSocket)
 	$pSocketAddress = 0
 	Return $aReturn[0]
 EndFunc   ;==>_TCP_Server_ClientIP
+#EndRegion ;**** Function to get IP from Restart Client ****
 
+#Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.8.7 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.9 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -676,8 +689,10 @@ If $UseRemoteRestart = "yes" Then
 		FileWriteLine($logFile, _NowCalc() & " Remote Restart Enabled. Listening for Restart Request at " & $g_IP & ":" & $g_Port)
 	EndIf
 EndIf
+#EndRegion ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 
-While True
+While True ;**** Loop Until Closed ****
+	#Region ;**** Listen for Remote Restart Request ****
 	If $UseRemoteRestart = "yes" Then
 		Local $ConnectedSocket = TCPAccept($MainSocket)
 		If $ConnectedSocket >= 0 Then
@@ -708,8 +723,9 @@ While True
 			If $ConnectedSocket <> -1 Then TCPCloseSocket($ConnectedSocket)
 		EndIf
 	EndIf
+	#EndRegion ;**** Listen for Remote Restart Request ****
 
-
+	#Region ;**** Keep Server Alive Check. ****
 	If Not ProcessExists($ConanPID) Then
 		$iBeginDelayedShutdown = 0
 		If $UseSteamCMD = "yes" Then
@@ -719,12 +735,6 @@ While True
 			Else
 				FileWriteLine($logFile, _NowCalc() & " Running SteamCMD without validate. [steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 +quit]")
 				RunWait("" & $steamcmddir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 +quit")
-			EndIf
-		EndIf
-		If $CheckForUpdate = "yes" Then
-			Local $bFirstCheck = UpdateCheck()
-			If (Not $bFirstCheck) Then
-				FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date. ")
 			EndIf
 		EndIf
 		If $BindIP = "no" Then
@@ -780,18 +790,20 @@ While True
 	ElseIf ((_DateDiff('n', $timeCheck1, _NowCalc())) >= 5) Then
 		Local $MEM = ProcessGetStats($ConanPID, 0)
 		If $MEM[0] > $ExMem And $ExMemRestart = "no" Then
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1])
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1])
 		ElseIf $MEM[0] > $ExMem And $ExMemRestart = "yes" Then
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1] & " Excessive Memory Use - Restart Requested by ConanServerUtility Script")
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1] & " Excessive Memory Use - Restart Requested by ConanServerUtility Script")
 			CloseServer()
 		EndIf
 		$timeCheck1 = _NowCalc()
 	EndIf
+	#EndRegion ;**** Keep Server Alive Check. ****
 
+	#Region ;**** Restart Server Every X Hours ****
 	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('n', $timeCheck2, _NowCalc())) >= 1)) And ($iBeginDelayedShutdown = 0) Then
 		If ProcessExists($ConanPID) Then
 			Local $MEM = ProcessGetStats($ConanPID, 0)
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] --Work Memory:" & $MEM[0] & " --Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
+			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
 			If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
 				$iBeginDelayedShutdown = 1
 				$mNextCheck = _NowCalc
@@ -801,19 +813,21 @@ While True
 		EndIf
 		$timeCheck2 = _NowCalc()
 	EndIf
+	#EndRegion ;**** Restart Server Every X Hours ****
 
+	#Region ;**** Check for Update every X Minutes ****
 	If ($CheckForUpdate = "yes") And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $UpdateInterval) And ($iBeginDelayedShutdown = 0) Then
 		Local $bRestart = UpdateCheck()
-		If (Not $bRestart) Then
-			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Server is Up to Date")
-		ElseIf $bRestart And ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
+		If $bRestart And (($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes")) Then
 			$iBeginDelayedShutdown = 1
-		Else
+		ElseIf $bRestart Then
 			CloseServer()
 		EndIf
 		$mNextCheck = _NowCalc()
 	EndIf
+	#EndRegion ;**** Check for Update every X Minutes ****
 
+	#Region ;**** Announce to Twitch or Discord or Both ****
 	If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
 		If $iBeginDelayedShutdown = 1 Then
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Bot in Use. Delaying Shutdown for " & $iDelayShutdownTime & " minutes. Notifying Channel")
@@ -827,6 +841,7 @@ While True
 			$iBeginDelayedShutdown = 2
 			$mNextCheck = _NowCalc()
 		ElseIf ($iBeginDelayedShutdown >= 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= $iDelayShutdownTime)) Then
+			#comments-start Really too much notification. Going to leave commented out for now.
 			Local $sShutdownMessage = $ServerName & " Restarting NOW"
 			If $sUseDiscordBot = "yes" Then
 				SendDiscordMsg($sDiscordWebHookURL, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
@@ -834,6 +849,7 @@ While True
 			If $sUseTwitchBot = "yes" Then
 				TwitchMsgLog($sShutdownMessage)
 			EndIf
+			#comments-end
 			$iBeginDelayedShutdown = 0
 			$mNextCheck = _NowCalc()
 			CloseServer()
@@ -850,7 +866,9 @@ While True
 	Else
 		$iBeginDelayedShutdown = 0
 	EndIf
+	#EndRegion ;**** Announce to Twitch or Discord or Both ****
 
+	#Region ;**** Rotate Logs ****
 	If ($logRotate = "yes") And ((_DateDiff('h', $logStartTime, _NowCalc())) >= 1) Then
 		If Not FileExists($logFile) Then
 			FileWriteLine($logFile, $logStartTime & " Log File Created")
@@ -863,6 +881,6 @@ While True
 		EndIf
 		$logStartTime = _NowCalc()
 	EndIf
-
+	#EndRegion ;**** Rotate Logs ****
 	Sleep(1000)
 WEnd
