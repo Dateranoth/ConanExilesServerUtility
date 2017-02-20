@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.9.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.9.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.10.0-beta.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.10.0-beta.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 18, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.9.1
+#AutoIt3Wrapper_Res_Fileversion=2.10.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -86,7 +86,7 @@ Func ReadUini()
 	Global $logQuantity = IniRead($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $iniCheck)
 	Global $logHoursBetweenRotate = IniRead($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $iniCheck)
 	Global $sUseDiscordBot = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $iniCheck)
-	Global $sDiscordWebHookURL = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $iniCheck)
+	Global $sDiscordWebHookURLs = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $iniCheck)
 	Global $sDiscordBotName = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $iniCheck)
 	Global $bDiscordBotUseTTS = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $iniCheck)
 	Global $sDiscordBotAvatar = IniRead($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $iniCheck)
@@ -236,8 +236,8 @@ Func ReadUini()
 		$sUseDiscordBot = "no"
 		$iniFail += 1
 	EndIf
-	If $iniCheck = $sDiscordWebHookURL Then
-		$sDiscordWebHookURL = "https://discordapp.com/api/webhooks/XXXXXX/XXXX <- NO TRAILING SLASH AND USE FULL URL FROM WEBHOOK URL ON DISCORD"
+	If $iniCheck = $sDiscordWebHookURLs Then
+		$sDiscordWebHookURLs = "https://discordapp.com/api/webhooks/XXXXXX/XXXX <- NO TRAILING SLASH AND USE FULL URL FROM WEBHOOK URL ON DISCORD"
 		$iniFail += 1
 	EndIf
 	If $iniCheck = $sDiscordBotName Then
@@ -351,7 +351,7 @@ Func UpdateIni()
 	IniWrite($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $logQuantity)
 	IniWrite($iniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $logHoursBetweenRotate)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $sUseDiscordBot)
-	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $sDiscordWebHookURL)
+	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $sDiscordWebHookURLs)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $sDiscordBotName)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $bDiscordBotUseTTS)
 	IniWrite($iniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $sDiscordBotAvatar)
@@ -428,16 +428,19 @@ Func _Discord_ErrFunc($oError)
 	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Error: 0x" & Hex($oError.number) & " While Sending Discord Bot Message.")
 EndFunc   ;==>_Discord_ErrFunc
 
-Func SendDiscordMsg($sHookURL, $sBotMessage, $sBotName = "", $sBotTTS = False, $sBotAvatar = "")
+Func SendDiscordMsg($sHookURLs, $sBotMessage, $sBotName = "", $sBotTTS = False, $sBotAvatar = "")
 	Local $oErrorHandler = ObjEvent("AutoIt.Error", "_Discord_ErrFunc")
 	Local $sJsonMessage = '{"content" : "' & $sBotMessage & '", "username" : "' & $sBotName & '", "tts" : "' & $sBotTTS & '", "avatar_url" : "' & $sBotAvatar & '"}'
 	Local $oHTTPOST = ObjCreate("WinHttp.WinHttpRequest.5.1")
-	$oHTTPOST.Open("POST", $sHookURL & "?wait=true", False)
-	$oHTTPOST.SetRequestHeader("Content-Type", "application/json")
-	$oHTTPOST.Send($sJsonMessage)
-	Local $oStatusCode = $oHTTPOST.Status
-	Local $oResponseText = $oHTTPOST.ResponseText
-	FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} Message Response " & $oResponseText)
+	Local $aHookURLs = StringSplit($sHookURLs, ",")
+	For $i = 1 To $aHookURLs[0]
+		$oHTTPOST.Open("POST", StringStripWS($aHookURLs[$i],2) & "?wait=true", False)
+		$oHTTPOST.SetRequestHeader("Content-Type", "application/json")
+		$oHTTPOST.Send($sJsonMessage)
+		Local $oStatusCode = $oHTTPOST.Status
+		Local $oResponseText = $oHTTPOST.ResponseText
+		FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} Message Response " & $oResponseText)
+	Next
 EndFunc   ;==>SendDiscordMsg
 #EndRegion ;**** Function to Send Message to Discord ****
 
@@ -660,7 +663,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.9.1 Started")
+FileWriteLine($logFile, _NowCalc() & " ConanServerUtility Script V2.10.0 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -842,7 +845,7 @@ While True ;**** Loop Until Closed ****
 			FileWriteLine($logFile, _NowCalc() & " [" & $ServerName & " (PID: " & $ConanPID & ")] Bot in Use. Delaying Shutdown for " & $iDelayShutdownTime & " minutes. Notifying Channel")
 			Local $sShutdownMessage = $ServerName & " Restarting in " & $iDelayShutdownTime & " minutes"
 			If $sUseDiscordBot = "yes" Then
-				SendDiscordMsg($sDiscordWebHookURL, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+				SendDiscordMsg($sDiscordWebHookURLs, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			EndIf
 			If $sUseTwitchBot = "yes" Then
 				TwitchMsgLog($sShutdownMessage)
@@ -853,7 +856,7 @@ While True ;**** Loop Until Closed ****
 			#comments-start Really too much notification. Going to leave commented out for now.
 			Local $sShutdownMessage = $ServerName & " Restarting NOW"
 			If $sUseDiscordBot = "yes" Then
-				SendDiscordMsg($sDiscordWebHookURL, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+				SendDiscordMsg($sDiscordWebHookURLs, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			EndIf
 			If $sUseTwitchBot = "yes" Then
 				TwitchMsgLog($sShutdownMessage)
@@ -865,7 +868,7 @@ While True ;**** Loop Until Closed ****
 		ElseIf $iBeginDelayedShutdown = 2 And ((_DateDiff('n', $mNextCheck, _NowCalc())) >= ($iDelayShutdownTime - 1)) Then
 			Local $sShutdownMessage = $ServerName & " Restarting in 1 minute. Final Warning"
 			If $sUseDiscordBot = "yes" Then
-				SendDiscordMsg($sDiscordWebHookURL, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
+				SendDiscordMsg($sDiscordWebHookURLs, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			EndIf
 			If $sUseTwitchBot = "yes" Then
 				TwitchMsgLog($sShutdownMessage)
