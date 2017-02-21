@@ -1,10 +1,10 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.10.0-beta.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.10.0-beta.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.10.0.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.10.0.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 18, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 20, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
 #AutoIt3Wrapper_Res_Fileversion=2.10.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
