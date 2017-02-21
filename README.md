@@ -51,6 +51,7 @@ If you plan on running multiple servers on the same machine, I suggest you creat
     4. Select which Channel you want the bot to announce to (Important)
     5. Under Webhook URL Click the Copy Button next to the URL
     6. Paste the entire Webhook to the INI after DiscordWebHookURL=
+       * To use multiple webhooks, separate each full webhook URL with a comma `,`
 * DiscordBotName
  * This will override the Name you setup in your webhook. Leave Blank to use default.
 * DiscordBotUseTTS
@@ -64,7 +65,7 @@ The Bot will announce immediately upon restart time. Notifying how long users ha
 ```
 [Use Discord Bot to Send Message Before Restart? yes/no]
 UseDiscordBot=yes
-DiscordWebHookURL=https://discordapp.com/api/webhooks/XXXXXXXXXXXXXXXXX/XXXXXXXX_XXXXX
+DiscordWebHookURL=https://discordapp.com/api/webhooks/AAAAAAA/AAAAAA,https://discordapp.com/api/webhooks/BBBBBB/BBBBB
 DiscordBotName=Conan Test Bot
 DiscordBotUseTTS=yes
 DiscordBotAvatarLink=
