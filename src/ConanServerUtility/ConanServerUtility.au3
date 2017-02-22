@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.10.0.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.10.0.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0-beta.1.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0-beta.1.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 20, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 21, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.10.0
+#AutoIt3Wrapper_Res_Fileversion=2.11.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -29,6 +29,8 @@ Global Const $g_c_sIniFile = @ScriptDir & "\ConanServerUtility.ini"
 Global $g_iIniFail = 0
 Global $g_iBeginDelayedShutdown = 0
 Global $g_iDelayShutdownTime = 0
+Global $g_sServerSettingIniLoc = "\ConanSandbox\saved\Config\WindowsServer\ServerSettings.ini"
+Global $g_bIniOverwriteFix = True ; This enables deleting the DefaultServerSettings.INI. Only way to make ServerSettings.ini work properly.
 
 If FileExists($g_c_sPIDFile) Then
 	Global $g_sConanPID = FileRead($g_c_sPIDFile)
@@ -41,14 +43,6 @@ Else
 	Global $g_hConanhWnd = "0"
 EndIf
 #EndRegion ;**** Global Variables ****
-
-#Region ;***TEMP- NEEDS TO BE ADDED TO INI VARIABLES
-Global $g_sEnableBuildingDmgControl = "yes"
-Global $g_sBuildingDmgEnabledTimes = "3-1000to3-2350"
-Global $g_sEnableAvatarControl = "yes"
-Global $g_sAvatarsDisabledTimes = "3-1000to3-2350"
-#EndRegion
-
 
 #Region ;**** INI Settings - User Variables ****
 Func ReadUini()
@@ -103,6 +97,10 @@ Func ReadUini()
 	Global $sChatOAuth = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "ChatOAuth", $iniCheck)
 	Global $sTwitchChannels = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchChannels", $iniCheck)
 	Global $iTwitchBotNotifyTime = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotTimeBeforeRestart", $iniCheck)
+	Global $g_sEnableBuildingDmgSchedule = IniRead($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "EnableBuildingDamageSchedule", $iniCheck)
+	Global $g_sBuildingDmgEnabledTimes = IniRead($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "BuildingDmgEnabledSchedule", $iniCheck)
+	Global $g_sEnableAvatarSchedule = IniRead($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "EnableAvatarSchedule", $iniCheck)
+	Global $g_sAvatarsDisabledTimes = IniRead($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "AvatarsDisabledSchedule", $iniCheck)
 
 	If $iniCheck = $BindIP Then
 		$BindIP = "yes"
@@ -287,6 +285,22 @@ Func ReadUini()
 	ElseIf $iTwitchBotNotifyTime < 1 Then
 		$iTwitchBotNotifyTime = 1
 	EndIf
+	If $iniCheck = $g_sEnableBuildingDmgSchedule Then
+		$g_sEnableBuildingDmgSchedule = "no"
+		$g_iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sBuildingDmgEnabledTimes Then
+		$g_sBuildingDmgEnabledTimes = "WDAY(Sunday1)-HHMMtoWDAY(Saturday7)-HHMM,1-0000to7-2359,6-2200to7-0500"
+		$g_iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sEnableAvatarSchedule Then
+		$g_sEnableAvatarSchedule = "no"
+		$g_iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sAvatarsDisabledTimes Then
+		$g_sAvatarsDisabledTimes = "WDAY(Sunday1)-HHMMtoWDAY(Saturday7)-HHMM,1-0000to7-2359,6-2200to7-0500"
+		$g_iIniFail += 1
+	EndIf
 	If $g_iIniFail > 0 Then
 		iniFileCheck()
 	EndIf
@@ -368,6 +382,10 @@ Func UpdateIni()
 	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "ChatOAuth", $sChatOAuth)
 	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchChannels", $sTwitchChannels)
 	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotTimeBeforeRestart", $iTwitchBotNotifyTime)
+	IniWrite($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "EnableBuildingDamageSchedule", $g_sEnableBuildingDmgSchedule)
+	IniWrite($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "BuildingDmgEnabledSchedule", $g_sBuildingDmgEnabledTimes)
+	IniWrite($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "EnableAvatarSchedule", $g_sEnableAvatarSchedule)
+	IniWrite($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "AvatarsDisabledSchedule", $g_sAvatarsDisabledTimes)
 EndFunc   ;==>UpdateIni
 #EndRegion ;**** INI Settings - User Variables ****
 
@@ -472,7 +490,7 @@ EndFunc   ;==>CheckRange
 Func ChangeSetting($sINI, $sSection, $sKey, $sValue)
 	$bReturn = False
 	If FileExists($sINI) Then
-		RotateFile($sINI, 5, False)
+		RotateFile($sINI, 15, False)
 		IniWrite($sINI, $sSection, $sKey, $sValue)
 		$bReturn = True
 	Else
@@ -481,11 +499,32 @@ Func ChangeSetting($sINI, $sSection, $sKey, $sValue)
 	Return $bReturn
 EndFunc
 
+Func DeleteDefaultINI()
+	Local $sINI = $serverdir & $g_sServerSettingIniLoc
+	Local $sDefaultIni = $serverdir & "\ConanSandbox\Config\DefaultServerSettings.ini"
+	If FileExists($sDefaultIni) Then
+		RotateFile($sDefaultIni, 2, False)
+		RotateFile($sINI, 15, False)
+		Local $aDefaultIni = IniReadSection($sDefaultIni, "ServerSettings")
+		If Not @error Then
+			For $i = 1 To $aDefaultIni[0][0]
+				Local $sCurrentValue = IniRead($sINI, "ServerSettings", $aDefaultIni[$i][0], "")
+				If $sCurrentValue = "" Then
+					IniWrite($sINI, "ServerSettings", $aDefaultIni[$i][0], $aDefaultIni[$i][1])
+				EndIf
+			Next
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & "] Copied any missing Keys from Default Server Settings to Runtime Server Settings.")
+		EndIf
+		FileDelete($sDefaultIni)
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & "] Backed up and Deleted " & $sDefaultIni)
+	EndIf
+EndFunc
+
 Func CheckSetting($sTimesAllowed, $sCheckINI, $sCheckSec, $sCheckKey)
 	Local $aReturn[3] = [False, False, False] ;In Range? Restart Needed? Setting Changed?
 	Local $aInRange = CheckRange($sTimesAllowed)
 	If $aInRange[1] Then
-		Local $sCurrentSetting = IniRead($sCheckINI, $sCheckSec, $sCheckKey, "")
+		Local $sCurrentSetting = IniRead($sCheckINI, $sCheckSec, $sCheckKey, "True")
 		If $aInRange[0] and $sCurrentSetting = "False" Then
 			$aReturn[0] = True ;In Range
 			If ProcessExists($g_sConanPID) Then
@@ -513,7 +552,7 @@ Func CheckSetting($sTimesAllowed, $sCheckINI, $sCheckSec, $sCheckKey)
 EndFunc
 
 Func RaidCheck()
-	Local $sServerSettingsFile = $serverdir & "\ConanSandbox\saved\Config\WindowsServer\ServerSettings.ini"
+	Local $sServerSettingsFile = $serverdir & $g_sServerSettingIniLoc
 	Local $aRaidCheck = CheckSetting($g_sBuildingDmgEnabledTimes, $sServerSettingsFile, "ServerSettings", "CanDamagePlayerOwnedStructures")
 	If $aRaidCheck[1] Then ;Restart Needed
 		If (($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes")) Then
@@ -522,7 +561,7 @@ Func RaidCheck()
 			CloseServer()
 		EndIf
 	ElseIf $aRaidCheck[0] And $aRaidCheck[2] Then ;In Time Range and Setting Changed to True
-		FileWriteLine($g_c_sLogFile, _NowCalc() & "[" & $ServerName & "] Player Owned Structure Damage Enabled!")
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & "] Player Owned Structure Damage Enabled!")
 		Local $sMessage = $ServerName & " Player Owned Structures Can be Damaged!"
 		If $sUseDiscordBot = "yes" Then
 			SendDiscordMsg($sDiscordWebHookURLs, $sMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
@@ -531,7 +570,7 @@ Func RaidCheck()
 			TwitchMsgLog($sMessage)
 		EndIf
 	ElseIf Not $aRaidCheck[0] And $aRaidCheck[2] Then ;Not In Time Range and Setting Changed to False
-		FileWriteLine($g_c_sLogFile, _NowCalc() & "[" & $ServerName & "] Player Owned Structure Damage Disabled!")
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & "] Player Owned Structure Damage Disabled!")
 		Local $sMessage = $ServerName & " Player Owned Structures Can NOT be Damaged!"
 		If $sUseDiscordBot = "yes" Then
 			SendDiscordMsg($sDiscordWebHookURLs, $sMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
@@ -543,7 +582,7 @@ Func RaidCheck()
 EndFunc
 
 Func AvatarCheck()
-	Local $sServerSettingsFile = $serverdir & "\ConanSandbox\saved\Config\WindowsServer\ServerSettings.ini"
+	Local $sServerSettingsFile = $serverdir & $g_sServerSettingIniLoc
 	Local $aAvatarCheck = CheckSetting($g_sAvatarsDisabledTimes, $sServerSettingsFile, "ServerSettings", "AvatarsDisabled")
 	If $aAvatarCheck[1] Then ;Restart Needed
 		If (($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes")) Then
@@ -552,7 +591,7 @@ Func AvatarCheck()
 			CloseServer()
 		EndIf
 	ElseIf $aAvatarCheck[0] And $aAvatarCheck[2] Then ;In Time Range and Setting Changed to True
-		FileWriteLine($g_c_sLogFile, _NowCalc() & "[" & $ServerName & "] Avatars Disabled!")
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & "] Avatars Disabled!")
 		Local $sMessage = $ServerName & " Avatars are now Disabled!"
 		If $sUseDiscordBot = "yes" Then
 			SendDiscordMsg($sDiscordWebHookURLs, $sMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
@@ -561,7 +600,7 @@ Func AvatarCheck()
 			TwitchMsgLog($sMessage)
 		EndIf
 	ElseIf Not $aAvatarCheck[0] And $aAvatarCheck[2] Then ;Not In Time Range and Setting Changed to False
-		FileWriteLine($g_c_sLogFile, _NowCalc() & "[" & $ServerName & "] Avatars Enabled!")
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & "] Avatars Enabled!")
 		Local $sMessage = $ServerName & " Avatars are now Enabled!"
 		If $sUseDiscordBot = "yes" Then
 			SendDiscordMsg($sDiscordWebHookURLs, $sMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
@@ -814,7 +853,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.10.0 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0-beta.1 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -900,10 +939,17 @@ While True ;**** Loop Until Closed ****
 				RunWait("" & $steamcmddir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 +quit")
 			EndIf
 		EndIf
-		If $g_sEnableBuildingDmgControl = "yes" Then
+		If $g_bIniOverwriteFix Then
+			DeleteDefaultINI()
+			Local $sCurrentAdminPass = IniRead($serverdir & $g_sServerSettingIniLoc,"ServerSettings","AdminPassword","")
+			If $sCurrentAdminPass <> $AdminPass Then
+				ChangeSetting($serverdir & $g_sServerSettingIniLoc, "ServerSettings", "AdminPassword", $AdminPass)
+			EndIf
+		EndIf
+		If $g_sEnableBuildingDmgSchedule = "yes" Then
 			RaidCheck()
 		EndIf
-		If $g_sEnableAvatarControl = "yes" Then
+		If $g_sEnableAvatarSchedule = "yes" Then
 			AvatarCheck()
 		EndIf
 		If $BindIP = "no" Then
@@ -998,10 +1044,10 @@ While True ;**** Loop Until Closed ****
 
 	#Region ;**** Check if Building Damage or Avatars need to be Toggled
 	If ((_DateDiff('n', $g_sTimeCheck3, _NowCalc())) >= 1) And ($g_iBeginDelayedShutdown = 0) Then
-		If $g_sEnableBuildingDmgControl = "yes" Then
+		If $g_sEnableBuildingDmgSchedule = "yes" Then
 			RaidCheck()
 		EndIf
-		If $g_sEnableAvatarControl = "yes" Then
+		If $g_sEnableAvatarSchedule = "yes" Then
 			AvatarCheck()
 		EndIf
 	$g_sTimeCheck3 = _NowCalc()
