@@ -1,10 +1,10 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0-beta.2.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0-beta.2.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0-beta.3.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0-beta.3.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 21, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 26, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
 #AutoIt3Wrapper_Res_Fileversion=2.11.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
@@ -558,17 +558,22 @@ Func CheckSetting($sTimesAllowed, $sCheckINI, $sCheckSec, $sCheckKey, $bFlipSett
 	Local $aReturn[3] = [False, False, False] ;In Range? Restart Needed? Setting Changed?
 	Local $aInRange = CheckRange($sTimesAllowed)
 	If $aInRange[1] Then
-		If $bFlipSetting = True Then
+		If $bFlipSetting Then
 			Local $sValforEnabled = "False"
 			Local $sValforDisabled = "True"
+			$aReturn[0] = True ;Flip Setting on. Make sure we notify the correct Change.
 		Else
 			Local $sValforEnabled = "True"
 			Local $sValforDisabled = "False"
 		EndIf
 
-		Local $sCurrentSetting = IniRead($sCheckINI, $sCheckSec, $sCheckKey, $sValforEnabled)
+		Local $sCurrentSetting = IniRead($sCheckINI, $sCheckSec, $sCheckKey, "True")
 		If $aInRange[0] And $sCurrentSetting = $sValforDisabled Then
-			$aReturn[0] = True ;In Range
+			If $bFlipSetting Then
+				$aReturn[0] = False ;In Range but Flip Setting True
+			Else
+				$aReturn[0] = True ;In Range
+			EndIf
 			If ProcessExists($g_sConanPID) Then
 				$aReturn[1] = True ;Restart Needed
 			Else
@@ -895,7 +900,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0-beta.2 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0-beta.3 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -1088,10 +1093,10 @@ While True ;**** Loop Until Closed ****
 	#Region ;**** Check if Building Damage or Avatars need to be Toggled
 	If ((_DateDiff('n', $g_sTimeCheck3, _NowCalc())) >= 1) And ($g_iBeginDelayedShutdown = 0) Then
 		If $g_sEnableBuildingDmgSchedule = "yes" Then
-			RaidCheck()
+			RaidCheck($g_bFlipBuildingDmgSchedule)
 		EndIf
 		If $g_sEnableAvatarSchedule = "yes" Then
-			AvatarCheck()
+			AvatarCheck($g_bFlipAvatarSchedule)
 		EndIf
 		$g_sTimeCheck3 = _NowCalc()
 	EndIf
