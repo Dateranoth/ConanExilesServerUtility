@@ -1,7 +1,7 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0-beta.3.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0-beta.3.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0-beta.4.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0-beta.4.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 26, 2017
@@ -492,12 +492,20 @@ Func CheckRange($sTimeSpan) ;Input Format WDAY-HHMMtoWDAY-HHMM <-Multiple Time r
 	Local $aStartStop = StringSplit($sTimeSpan, ",")
 	For $i = 1 To $aStartStop[0]
 		$aStartStop[$i] = StringStripWS($aStartStop[$i], 8)
-		If StringRegExp($aStartStop[$i], '^[1-7]-([01]\d|2[0-3])([0-5]\d)to[1-7]-([01]\d|2[0-3])([0-5]\d)$') Then
+		If StringRegExp($aStartStop[$i], '^[0-7]-([01]\d|2[0-3])([0-5]\d)to[0-7]-([01]\d|2[0-3])([0-5]\d)$') Then
 			Local $iTime = @HOUR & @MIN
 			Local $aDayHourMinute = StringSplit($aStartStop[$i], "to", 1)
 			Local $aStart = StringSplit($aDayHourMinute[1], "-")
 			Local $aStop = StringSplit($aDayHourMinute[2], "-")
-			If ($aStart[1] = $aStop[1]) And (((@WDAY = $aStart[1]) Or (@WDAY = $aStop[1])) And ($iTime >= $aStart[2]) And ($iTime <= $aStop[2])) Then
+			If (($aStart[1] = "0") Or ($aStop[1] = "0")) And ($aStart[1] <> $aStop[1]) Then
+				$aReturn[0] = False ;Return False - Not Currently within Date Range
+				$aReturn[1] = False ;Return False - Incorrect String Format
+				$aReturn[2] = $aStartStop[$i] ;Return Bad String
+				ExitLoop
+			ElseIf (($aStart[1] = "0") Or ($aStop[1] = "0")) And ($iTime >= $aStart[2]) And ($iTime <= $aStop[2]) Then
+				$aReturn[0] = True ;Return True - Start and Stop Day set to Everyday '0', and it is currently within the time range
+				ExitLoop
+			ElseIf ($aStart[1] = $aStop[1]) And (((@WDAY = $aStart[1]) Or (@WDAY = $aStop[1])) And ($iTime >= $aStart[2]) And ($iTime <= $aStop[2])) Then
 				$aReturn[0] = True ;Return True - Start Day is equal to Stop Day which is equal to Today, and it is currently within the time range
 				ExitLoop
 			ElseIf ($aStop[1] > $aStart[1]) And ((@WDAY > $aStart[1]) And (@WDAY < $aStop[1])) Then
@@ -593,7 +601,7 @@ Func CheckSetting($sTimesAllowed, $sCheckINI, $sCheckSec, $sCheckKey, $bFlipSett
 			EndIf
 		EndIf
 	Else
-		FileWriteLine($g_c_sLogFile, _NowCalc() & "[" & $ServerName & "] [TIME FORMAT ERROR] Date Format Wrong. This was entered[ " & $aInRange[2] & " ]Proper Format is WDAY-HHMMtoWDAY-HHMM  (Sunday=1 Saturday=7) It is currently " & @WDAY & "-" & @HOUR & @MIN & @CRLF)
+		FileWriteLine($g_c_sLogFile, _NowCalc() & "[" & $ServerName & "] [TIME FORMAT ERROR] Date Format Wrong. This was entered[ " & $aInRange[2] & " ]Proper Format is WDAY-HHMMtoWDAY-HHMM  (Sunday=1 Saturday=7 Everyday=0) It is currently " & @WDAY & "-" & @HOUR & @MIN & @CRLF)
 	EndIf
 	Return $aReturn
 EndFunc   ;==>CheckSetting
@@ -900,7 +908,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0-beta.3 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0-beta.4 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
