@@ -553,7 +553,7 @@ EndFunc   ;==>CheckRange
 Func ChangeSetting($sINI, $sSection, $sKey, $sValue)
 	$bReturn = False
 	If FileExists($sINI) Then
-		RotateFile($sINI, 15, False)
+		RotateFile($sINI, 4, False)
 		IniWrite($sINI, $sSection, $sKey, $sValue)
 		$bReturn = True
 	Else
@@ -567,7 +567,7 @@ Func DeleteDefaultINI()
 	Local $sDefaultIni = $serverdir & "\ConanSandbox\Config\DefaultServerSettings.ini"
 	If FileExists($sDefaultIni) Then
 		RotateFile($sDefaultIni, 2, False)
-		RotateFile($sINI, 15, False)
+		RotateFile($sINI, 4, False)
 		Local $aDefaultIni = IniReadSection($sDefaultIni, "ServerSettings")
 		If Not @error Then
 			For $i = 1 To $aDefaultIni[0][0]
