@@ -24,13 +24,15 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Log Excessive memory use. Set to a very large number if you don't wish to log anything
 *   Set Game Name, Game IP, Game port, max players, Server Password, and Admin Password
 *   Rotate X number of logs created by utility every X hours
+*   Schedule when player buildings can be damaged and restart when needed.
+*   Schedule when Avatars are allowed and restart when needed.
     
 # Conan Remote Restart Features
 *   If enabled on the server, use to remotely restart the server.
 *   Set Password in INI file to save, or type each time.
 *   Restart using IP or Domain Name
 
-This utility, when SteamCMD and daily restarts are enabled, will keep the server up to date on a daily basis.  You can also use  SteamCMD and remote restart to update the server anytime you send the restart request. If CheckForUpdate is enabled this utility will parse the RSS for Conan to look for PATCH headers every X minutes based on the time you pick.  If it finds a new header it will restart to update the server.
+This utility, when SteamCMD and daily restarts are enabled, will keep the server up to date on a daily basis.  You can also use  SteamCMD and remote restart to update the server anytime you send the restart request. If CheckForUpdate is enabled this utility will pull the latest version from SteamCMD and compare it to the local app manifest.  If it finds a newer version, it will automatically restart to update the server.
 
 A few things to note. The Game Server IP will be the IP you wish to bind to. This may be a local IP if your server is behind a router.  Also, the game can take a long time to gracefully shut down. So, when the restart is initiated, the utility attempts to gracefully shut down the server. If the server will not shut down gracefully after 1 minute the process is forcefully closed. When SteamCMD is used, a full cycle from the time the command is sent to the time the server is back on line can take 10 minutes or more.  Finally, the remote restart port needs to be allowed through your firewall. 
 
@@ -38,7 +40,7 @@ A few things to note. The Game Server IP will be the IP you wish to bind to. Thi
 Place a copy of the EXE in a different Conan_Server directory, update the INI file to make sure you have no port conflicts, and run the script.  A couple of things you might want to do to help manage two or more running at once. Change the ConanServerUtility.exe names to something Utility1 and Utility2 or something like that. Also, you probably should set the Minute about 30 minutes apart from each so they are not restarting at the same time.
 
 ### Using Update Check on Multiple Servers
-If you plan on running multiple servers on the same machine, I suggest you create different SteamCMD folders for each server. Due to the way the update is checked, if your servers checked at the same time, it would cause a conflict. This could result in an update being missed for all servers.  
+If you plan on running multiple servers on the same machine, I suggest you create different SteamCMD folders for each server. Due to the way the update is checked, if your servers checked at the same time, it could cause a conflict. This could result in an update being missed for all servers.  
 
 # How to Use Discord Bot
 * UseDiscordBot
@@ -131,3 +133,81 @@ Additionally, I have added the option to Obfuscate passwords in the log files. C
 `ObfuscatePass="yes"` and `AdminPass=aPasWd123`
 
 Log displays `AdminPass=***sWd1**`
+
+# How to use Building Damage and Avatar Schedule
+
+## Settings and Examples
+* **EnableBuildingDamageSchedule**
+   * `yes` will turn on scheduling of Building Damage and automatically restart when changing state
+   * `no` will leave setting at whatever state it was in on last run.
+* **BuildingDmgEnabledSchedule**
+   * This is an array that will determine when player owned buildings **CAN BE DAMAGED**
+   * Format is `WDAY-HHMMtoWDAY-HHMM` 
+       * `WDAY = 1 - 7, 1 is Sunday and 7 is Saturday`
+       * `HHMM = 0000 - 2359`
+       * Example: To **Enable** Building Damage Friday Night at 06:00 to Saturday Morning at 10:00
+          * `BuildingDmgEnabledSchedule=6-0600to7-1000`
+       * Example: To **Enable** Building Damage Monday 11:50 to 17:00 and Tuesday 11:50 to 17:00
+         * `BuildingDmgEnabledSchedule=2-1150to2-1700,3-1150to3-1700`
+       * Example: To **Enable** Building Damage Everyday except Friday
+          * `BuildingDmgEnabledSchedule=7-0000to5-2359`
+       * Example: To **Enable** Building Damage Everyday Between 0500 and 1000
+          * `BuildingDmgEnabledSchedule=0-0500to0-1000`
+             * *For this to work both start and stop day must be 0. If one is 0 and the other is not, it will log the issue and the schedule will not work properly* 
+* **FlipBuildingDmgSchedule**
+	   * `yes` Will **Disable** building damage during scheduled times
+	       * *This is the opposite of what is listed in the above examples*
+	   * `no` Will **Enable** building damage during scheduled times
+	   
+* **EnableAvatarSchedule**
+   * `yes` will turn on scheduling of Avatars and automatically restart when changing state
+   * `no` will leave setting at whatever state it was in on last run.
+* **AvatarsDisabledSchedule**
+   * This is an array that will determine when Avatars **ARE DISABLED**
+   * Format is `WDAY-HHMMtoWDAY-HHMM` 
+       * `WDAY = 0 - 7, 0 is Everyday 1 is Sunday and 7 is Saturday`
+       * `HHMM = 0000 - 2359`
+       * Example: To **Disable** Avatars Friday Night at 06:00 to Saturday Morning at 10:00
+          * `AvatarsDisabledSchedule=6-0600to7-1000`
+       * Example: To **Disable** Avatars Monday 11:50 to 17:00 and Tuesday 11:50 to 17:00
+         * `AvatarsDisabledSchedule=2-1150to2-1700,3-1150to3-1700`
+       * Example: To **Disable** Avatars Everyday except Friday
+          * `AvatarsDisabledSchedule=7-0000to5-2359`
+       * Example: To **Disable** Avatars Everyday Between 0500 and 1000
+          * `AvatarsDisabledSchedule=0-0500to0-1000`
+             * *For this to work both start and stop day must be 0. If one is 0 and the other is not, it will log the issue and the schedule will not work properly* 
+* **FlipAvatarSchedule**
+       * `yes` Will **Enable** Avatars during scheduled times
+	       * *This is the opposite of what is listed in the above examples*
+       * `no` Will **Disable** Avatars during scheduled times
+	   
+* **IniOverwriteFix**
+       * `yes` Will move defaultserversettings.ini missing values to serversettings.ini then backup and delete defaultserversettings.ini
+       * `no` Will disable this option. **SCHEDULES MAY NOT WORK WITH THIS DISABLED**
+```
+[Enable Building Damage by Scheduled Time? yes/no]
+EnableBuildingDamageSchedule=no
+BuildingDmgEnabledSchedule=WDAY(Sunday1)-HHMMtoWDAY(Saturday7)-HHMM,1-0000to7-2359,6-2200to7-0500
+FlipBuildingDmgSchedule=no
+[Disable Avatars by Scheduled Time? yes/no]
+EnableAvatarSchedule=no
+AvatarsDisabledSchedule=WDAY(Sunday1)-HHMMtoWDAY(Saturday7)-HHMM,1-0000to7-2359,6-2200to7-0500
+FlipAvatarSchedule=no
+[Bug Fix - Copy from then Delete Default Server Settings INI? yes/no]
+IniOverwriteFix=yes
+```
+
+### General Information on Scheduling
+These settings will be honored whether the server was online when the schedule started or not. If you start the server 10 minutes before a schedule ends, it **WILL** enable/disable the setting on startup and then **Restart** the server at the end of the schedule to switch it back.
+
+If you are using Discord or Twitch for announcements, this will delay the start and stop times of your schedule by the length of the announcement. If you have the start time set for 0500 and a Time Before restart of 5 minutes, then it will announce the intent to restart at 0500 and will restart at 0505 with the setting enabled or disabled depending on the schedule.
+
+Finally, Daily and Update Restarts do not care what is going on with the schedule.  If an update comes out 30 minutes before a schedule starts, the server will reboot to update,  and then reboot again to change the setting during the scheduled time. For updates, this is obviously necessary, but you should be very careful setting Daily Restarts too close to scheduled enable/ disable times unless you want multiple restarts close together.
+
+If `IniOverwriteFix=yes`
+The first time this is ran and a server is not running it will copy all missing settings from DefaultServerSettings.ini to ServerSettings.ini **NO** **CURRENT** **SETTINGS** **ARE** **OVERWRITTEN** . A backup will be created of both files and the *DefaultServerSettings.ini* will be deleted. This is necessary to prevent problems with settings in the default INI conflicting and often overwriting the normal settings. This will not hurt your game, and a backup will be available in the ConanSandbox\Config directory if you need it. 
+
+If `IniOverwriteFix=no`
+Schedules may or may not work, and it is possible that your server will be stuck in a restart loop. It is suggested that you leave this set to `yes`
+
+# END
