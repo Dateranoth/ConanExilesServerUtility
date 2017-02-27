@@ -1,10 +1,10 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0-beta.4.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0-beta.4.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 26, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 27, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
 #AutoIt3Wrapper_Res_Fileversion=2.11.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
@@ -532,7 +532,7 @@ EndFunc   ;==>CheckRange
 Func ChangeSetting($sINI, $sSection, $sKey, $sValue)
 	$bReturn = False
 	If FileExists($sINI) Then
-		RotateFile($sINI, 15, False)
+		RotateFile($sINI, 4, False)
 		IniWrite($sINI, $sSection, $sKey, $sValue)
 		$bReturn = True
 	Else
@@ -546,7 +546,7 @@ Func DeleteDefaultINI()
 	Local $sDefaultIni = $serverdir & "\ConanSandbox\Config\DefaultServerSettings.ini"
 	If FileExists($sDefaultIni) Then
 		RotateFile($sDefaultIni, 2, False)
-		RotateFile($sINI, 15, False)
+		RotateFile($sINI, 4, False)
 		Local $aDefaultIni = IniReadSection($sDefaultIni, "ServerSettings")
 		If Not @error Then
 			For $i = 1 To $aDefaultIni[0][0]
@@ -908,7 +908,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0-beta.4 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
