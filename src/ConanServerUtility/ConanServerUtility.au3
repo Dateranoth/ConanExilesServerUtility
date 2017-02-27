@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.11.0-beta.4.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.11.0-beta.4.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.12.0-beta.1.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.12.0-beta.1.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 26, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 27, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.11.0
+#AutoIt3Wrapper_Res_Fileversion=2.12.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -43,6 +43,8 @@ Else
 EndIf
 #EndRegion ;**** Global Variables ****
 
+
+
 #Region ;**** INI Settings - User Variables ****
 Func ReadUini()
 	Local $iniCheck = ""
@@ -69,9 +71,11 @@ Func ReadUini()
 	Global $g_Port = IniRead($g_c_sIniFile, "Remote Restart Port", "ListenPort", $iniCheck)
 	Global $RestartCode = IniRead($g_c_sIniFile, "Remote Restart Password", "RestartCode", $iniCheck)
 	Global $sObfuscatePass = IniRead($g_c_sIniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $iniCheck)
-	Global $RestartDaily = IniRead($g_c_sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $iniCheck)
 	Global $CheckForUpdate = IniRead($g_c_sIniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $iniCheck)
 	Global $UpdateInterval = IniRead($g_c_sIniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $iniCheck)
+	Global $g_sUpdateMods = IniRead($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "CheckForModUpdate", $iniCheck)
+	Global $g_sMods = IniRead($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "ModList", $iniCheck)
+	Global $RestartDaily = IniRead($g_c_sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $iniCheck)
 	Global $HotHour1 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour1", $iniCheck)
 	Global $HotHour2 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour2", $iniCheck)
 	Global $HotHour3 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour3", $iniCheck)
@@ -168,10 +172,6 @@ Func ReadUini()
 		$sObfuscatePass = "yes"
 		$g_iIniFail += 1
 	EndIf
-	If $iniCheck = $RestartDaily Then
-		$RestartDaily = "no"
-		$g_iIniFail += 1
-	EndIf
 	If $iniCheck = $CheckForUpdate Then
 		$CheckForUpdate = "yes"
 		$g_iIniFail += 1
@@ -184,6 +184,21 @@ Func ReadUini()
 		$g_iIniFail += 1
 	ElseIf $UpdateInterval < 5 Then
 		$UpdateInterval = 5
+	EndIf
+	If $iniCheck = $g_sUpdateMods Then
+		$g_sUpdateMods = "no"
+		$g_iIniFail += 1
+	ElseIf $g_sUpdateMods = "yes" And $CheckForUpdate <> "yes" Then
+		$g_sUpdateMods = "no"
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " Server Update Check is Disabled. Disabling Mod Updates. Does not make sense to update Mods and Not Server!")
+	EndIf
+	If $iniCheck = $g_sMods Then
+		$g_sMods = "#########,#########"
+		$g_iIniFail += 1
+	EndIf
+	If $iniCheck = $RestartDaily Then
+		$RestartDaily = "no"
+		$g_iIniFail += 1
 	EndIf
 	If $iniCheck = $HotHour1 Then
 		$HotHour1 = "00"
@@ -386,9 +401,11 @@ Func UpdateIni()
 	IniWrite($g_c_sIniFile, "Remote Restart Port", "ListenPort", $g_Port)
 	IniWrite($g_c_sIniFile, "Remote Restart Password", "RestartCode", $RestartCode)
 	IniWrite($g_c_sIniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $sObfuscatePass)
-	IniWrite($g_c_sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $RestartDaily)
 	IniWrite($g_c_sIniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $CheckForUpdate)
 	IniWrite($g_c_sIniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $UpdateInterval)
+	IniWrite($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "CheckForModUpdate", $g_sUpdateMods)
+	IniWrite($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "ModList", $g_sMods)
+	IniWrite($g_c_sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $RestartDaily)
 	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour1", $HotHour1)
 	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour2", $HotHour2)
 	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour3", $HotHour3)
@@ -460,6 +477,10 @@ Func CloseServer()
 		FileDelete($g_c_sHwndFile)
 	EndIf
 EndFunc   ;==>CloseServer
+
+Func LogWrite($sString)
+	FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] " & $sString)
+EndFunc   ;==>LogWrite
 
 Func RotateFile($sFile, $sBackupQty, $bDelOrig = True) ;Pass File to Rotate and Quantity of Files to Keep for backup. Optionally Keep Original.
 	Local $hCreateTime = @YEAR & @MON & @MDAY
@@ -858,6 +879,162 @@ Func UpdateCheck()
 EndFunc   ;==>UpdateCheck
 #EndRegion ;**** Functions to Check for Update ****
 
+#Region ;**** Functions to Check for Mod Updates ****
+Func GetLatestModUpdateTime($sMod)
+	Local $aReturn[3] = [False, False, ""]
+	InetGet("http://steamcommunity.com/sharedfiles/filedetails/changelog/" & $sMod, @ScriptDir & "\mod_info.tmp", 1)
+	Local Const $sFilePath = @ScriptDir & "\mod_info.tmp"
+	Local $hFileOpen = FileOpen($sFilePath, 0)
+	If $hFileOpen = -1 Then
+		$aReturn[0] = False
+	Else
+		$aReturn[0] = True ;File Exists
+		Local $sFileRead = FileRead($hFileOpen)
+		Local $aAppInfo = StringSplit($sFileRead, 'Update:', 1)
+		If UBound($aAppInfo) >= 3 Then
+			$aAppInfo = StringSplit($aAppInfo[2], '"></p>', 1)
+		EndIf
+		If UBound($aAppInfo) >= 2 Then
+			$aAppInfo = StringSplit($aAppInfo[1], 'id="', 1)
+		EndIf
+		If UBound($aAppInfo) >= 2 And StringRegExp($aAppInfo[2], '^\d+$') Then
+			$aReturn[1] = True ;Successfully Read numerical value at positition expected
+			$aReturn[2] = $aAppInfo[2] ;Return Value Read
+		EndIf
+		FileClose($hFileOpen)
+		If FileExists($sFilePath) Then
+			FileDelete($sFilePath)
+		EndIf
+	EndIf
+	Return $aReturn
+EndFunc   ;==>GetLatestModUpdateTime
+
+Func GetInstalledModUpdateTime($sServerDir, $sMod)
+	Local $aReturn[3] = [False, False, ""]
+	Local Const $sFilePath = $sServerDir & "\steamapps\workshop\appworkshop_440900.acf"
+	Local $hFileOpen = FileOpen($sFilePath, 0)
+	If $hFileOpen = -1 Then
+		$aReturn[0] = False
+	Else
+		$aReturn[0] = True ;File Exists
+		Local $sFileRead = FileRead($hFileOpen)
+		Local $aAppInfo = StringSplit($sFileRead, '"WorkshopItemDetails"', 1)
+		If UBound($aAppInfo) >= 3 Then
+			$aAppInfo = StringSplit($aAppInfo[2], '"' & $sMod & '"', 1)
+		EndIf
+		If UBound($aAppInfo) >= 3 Then
+			$aAppInfo = StringSplit($aAppInfo[2], '"timetouched', 1)
+		EndIf
+		If UBound($aAppInfo) >= 2 Then
+			$aAppInfo = StringSplit($aAppInfo[1], '"', 1)
+		EndIf
+		If UBound($aAppInfo) >= 9 And StringRegExp($aAppInfo[8], '^\d+$') Then
+			$aReturn[1] = True ;Successfully Read numerical value at positition expected
+			$aReturn[2] = $aAppInfo[8] ;Return Value Read
+		EndIf
+
+		If FileExists($sFilePath) Then
+			FileClose($hFileOpen)
+		EndIf
+	EndIf
+	Return $aReturn
+EndFunc   ;==>GetInstalledModUpdateTime
+
+Func CheckMod($sMods, $sSteamCmdDir, $sServerDir)
+	Local $aMods = StringSplit($sMods, ",")
+	For $i = 1 To $aMods[0]
+		$aMods[$i] = StringStripWS($aMods[$i], 8)
+		Local $aLatestTime = GetLatestModUpdateTime($aMods[$i])
+		Local $aInstalledTime = GetInstalledModUpdateTime($sServerDir, $aMods[$i])
+		Local $bStopUpdate = False
+		If Not $aLatestTime[0] Or Not $aLatestTime[1] Then
+			LogWrite("Something went wrong downloading update information for mod [" & $aMods[$i] & "] Check your Mod List for incorrect Mod numbers.")
+		ElseIf Not $aInstalledTime[0] Then
+			$bStopUpdate = UpdateMod($aMods[$i], $sSteamCmdDir, $sServerDir, 0) ;No Manifest. Download First Mod
+			If $bStopUpdate Then ExitLoop
+		ElseIf Not $aInstalledTime[1] Then
+			$bStopUpdate = UpdateMod($aMods[$i], $sSteamCmdDir, $sServerDir, 1) ;Mod does not exists. Download
+			If $bStopUpdate Then ExitLoop
+		ElseIf $aInstalledTime[1] And (StringCompare($aLatestTime[2], $aInstalledTime[2]) <> 0) Then
+			$bStopUpdate = UpdateMod($aMods[$i], $sSteamCmdDir, $sServerDir, 2) ;Mod Out of Date. Update.
+			If $bStopUpdate Then ExitLoop
+		EndIf
+	Next
+EndFunc   ;==>CheckMod
+
+Func WriteModList($sServerDir)
+	Local $sModFile = $sServerDir & "\ConanSandbox\Mods\modlist.txt"
+	Local $hSearch = FileFindFirstFile($sServerDir & "\ConanSandbox\Mods\*.pak")
+	If $hSearch = -1 Then
+		LogWrite("Error: No Mod Files Found.")
+		Return False
+	Else
+		FileDelete($sModFile)
+	EndIf
+
+	Local $sFileName = ""
+
+	While 1
+		$sFileName = FileFindNextFile($hSearch)
+		; If there is no more file matching the search.
+		If @error Then ExitLoop
+		FileWriteLine($sModFile, $sFileName)
+	WEnd
+	FileClose($hSearch)
+EndFunc   ;==>WriteModList
+
+Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
+	Local $bReturn = False
+	If ProcessExists("steamcmd.exe") And FileExists($sSteamCmdDir & "\inuse.tmp") Then
+		LogWrite("A different Script is currently using SteamCMD in this directory. Skipping Mod " & $sMod & " Update for Now")
+		$bReturn = True ;Tell Previous Function to Exit Loop.
+	ElseIf ProcessExists($g_sConanPID) Then
+		LogWrite("Mod Update Found but Server is Currently Running.")
+		If (($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes")) Then
+			$g_iBeginDelayedShutdown = 1
+		Else
+			CloseServer()
+		EndIf
+		$bReturn = True ;Tell Previous Function to Exit Loop.
+	Else
+		FileWriteLine($sSteamCmdDir & "\inuse.tmp", "Conan Server Utility Using SteamCMD to Update Mod. If Steam Command is not running. Delete this file.")
+		Local Const $sModManifest = "\steamapps\workshop\appworkshop_440900.acf"
+		If FileExists($sSteamCmdDir & $sModManifest) Then
+			FileMove($sSteamCmdDir & $sModManifest, $sSteamCmdDir & $sModManifest & ".BAK")
+		EndIf
+		If FileExists($sServerDir & $sModManifest) Then
+			FileMove($sServerDir & $sModManifest, $sSteamCmdDir & $sModManifest, 1 + 8)
+		EndIf
+		RunWait("" & $sSteamCmdDir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +workshop_download_item 440900 " & $sMod & " +exit")
+		If FileExists($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod) Then
+			FileMove($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod & "\*.pak", $sServerDir & "\ConanSandbox\Mods\", 1 + 8)
+			DirRemove($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod, 1)
+		EndIf
+		If FileExists($sSteamCmdDir & $sModManifest) Then
+			FileMove($sSteamCmdDir & $sModManifest, $sServerDir & "\steamapps\workshop\appworkshop_440900.acf", 1 + 8)
+		EndIf
+		WriteModList($sServerDir)
+		Switch $iReason
+			Case 0
+				LogWrite("No mod manifest existed. Downloaded First Mod " & $sMod & " to create Manifest. Should only see this once.")
+			Case 1
+				LogWrite("Mod " & $sMod & " did not exist. Downloaded.")
+			Case 2
+				LogWrite("Mod " & $sMod & " was out of date. Updated")
+		EndSwitch
+		$bReturn = False ;Tell Previous To Continue.
+		Local $hTimeOutTimer = TimerInit()
+		While FileExists($sSteamCmdDir & "\inuse.tmp")
+			FileDelete($sSteamCmdDir & "\inuse.tmp")
+			If @error Then ExitLoop
+			If TimerDiff($hTimeOutTimer) > 10000 Then ExitLoop
+		WEnd
+	EndIf
+
+	Return $bReturn
+EndFunc   ;==>UpdateMod
+#EndRegion
+
 #Region ;**** Functions for Multiple Passwords and Hiding Password ****
 Func PassCheck($sPass, $sPassString)
 	Local $aPassReturn[3] = [False, "", ""]
@@ -908,7 +1085,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.11.0-beta.4 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.12.0-beta.1 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -994,6 +1171,9 @@ While True ;**** Loop Until Closed ****
 				RunWait("" & $steamcmddir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 +quit")
 			EndIf
 		EndIf
+		If $g_sUpdateMods = "yes" Then
+			CheckMod($g_sMods, $steamcmddir, $serverdir)
+		EndIf
 		If $g_bIniOverwriteFix Then
 			DeleteDefaultINI()
 		EndIf
@@ -1001,7 +1181,6 @@ While True ;**** Loop Until Closed ****
 		If $sCurrentAdminPass <> $AdminPass Then
 			ChangeSetting($serverdir & $g_sServerSettingIniLoc, "ServerSettings", "AdminPassword", $AdminPass)
 		EndIf
-
 		If $g_sEnableBuildingDmgSchedule = "yes" Then
 			RaidCheck($g_bFlipBuildingDmgSchedule)
 		EndIf
@@ -1093,6 +1272,9 @@ While True ;**** Loop Until Closed ****
 			$g_iBeginDelayedShutdown = 1
 		ElseIf $bRestart Then
 			CloseServer()
+		ElseIf $g_sUpdateMods = "yes" Then
+			LogWrite("Checking for Mod Updates")
+			CheckMod($g_sMods, $steamcmddir, $serverdir)
 		EndIf
 		$g_sTimeCheck0 = _NowCalc()
 	EndIf
