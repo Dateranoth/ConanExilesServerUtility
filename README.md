@@ -143,7 +143,7 @@ Log displays `AdminPass=***sWd1**`
 * **BuildingDmgEnabledSchedule**
    * This is an array that will determine when player owned buildings **CAN BE DAMAGED**
    * Format is `WDAY-HHMMtoWDAY-HHMM` 
-       * `WDAY = 1 - 7, 1 is Sunday and 7 is Saturday`
+       * `WDAY = 0 - 7, 0 is Everyday, 1 is Sunday and 7 is Saturday`
        * `HHMM = 0000 - 2359`
        * Example: To **Enable** Building Damage Friday Night at 06:00 to Saturday Morning at 10:00
           * `BuildingDmgEnabledSchedule=6-0600to7-1000`
@@ -165,7 +165,7 @@ Log displays `AdminPass=***sWd1**`
 * **AvatarsDisabledSchedule**
    * This is an array that will determine when Avatars **ARE DISABLED**
    * Format is `WDAY-HHMMtoWDAY-HHMM` 
-       * `WDAY = 0 - 7, 0 is Everyday 1 is Sunday and 7 is Saturday`
+       * `WDAY = 0 - 7, 0 is Everyday, 1 is Sunday and 7 is Saturday`
        * `HHMM = 0000 - 2359`
        * Example: To **Disable** Avatars Friday Night at 06:00 to Saturday Morning at 10:00
           * `AvatarsDisabledSchedule=6-0600to7-1000`
