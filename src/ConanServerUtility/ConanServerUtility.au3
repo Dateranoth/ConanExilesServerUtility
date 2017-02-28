@@ -1,10 +1,10 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.12.0-beta.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.12.0-beta.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.12.0-beta.2.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.12.0-beta.2.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 27, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - Feburary 28, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
 #AutoIt3Wrapper_Res_Fileversion=2.12.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
@@ -892,7 +892,7 @@ Func GetLatestModUpdateTime($sMod)
 		Local $sFileRead = FileRead($hFileOpen)
 		Local $aAppInfo = StringSplit($sFileRead, 'Update:', 1)
 		If UBound($aAppInfo) >= 3 Then
-			$aAppInfo = StringSplit($aAppInfo[2], '"></p>', 1)
+			$aAppInfo = StringSplit($aAppInfo[2], '">', 1)
 		EndIf
 		If UBound($aAppInfo) >= 2 Then
 			$aAppInfo = StringSplit($aAppInfo[1], 'id="', 1)
@@ -1085,7 +1085,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.12.0-beta.1 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.12.0-beta.2 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
