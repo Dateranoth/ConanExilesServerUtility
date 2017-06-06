@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.12.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.12.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.13.0-beta.1.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.13.0-beta.1.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - March 1, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - June 6, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.12.1
+#AutoIt3Wrapper_Res_Fileversion=2.13.0-beta.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -24,6 +24,7 @@ Global $g_sTimeCheck4 = _NowCalc()
 Global Const $g_c_sServerEXE = "ConanSandboxServer-Win64-Test.exe"
 Global Const $g_c_sPIDFile = @ScriptDir & "\ConanServerUtility_lastpid_tmp"
 Global Const $g_c_sHwndFile = @ScriptDir & "\ConanServerUtility_lasthwnd_tmp"
+Global Const $g_c_sMODIDFile = @ScriptDir & "\ConanServerUtility_modid2modname_tmp"
 Global Const $g_c_sLogFile = @ScriptDir & "\ConanServerUtility.log"
 Global Const $g_c_sIniFile = @ScriptDir & "\ConanServerUtility.ini"
 Global $g_iIniFail = 0
@@ -964,24 +965,31 @@ EndFunc   ;==>CheckMod
 
 Func WriteModList($sServerDir)
 	Local $sModFile = $sServerDir & "\ConanSandbox\Mods\modlist.txt"
-	Local $hSearch = FileFindFirstFile($sServerDir & "\ConanSandbox\Mods\*.pak")
+	FileDelete($sModFile)
+	Local $aMods = StringSplit($g_sMods, ",")
+	Local $sModName = ""
+	For $i = 1 To $aMods[0]
+		$aMods[$i] = StringStripWS($aMods[$i], 8)
+		$sModName = IniRead($g_c_sMODIDFile, "MODID2MODNAME", $aMods[$i], $aMods[$i])
+		If $aMods[$i] = $sModName Then
+			LogWrite("Could not find Mod name for " & $aMods[$i] & " in " & $g_c_sMODIDFile & " Please refer to README and manually update list.")
+		Else
+			FileWriteLine($sModFile, $sModName)
+		EndIf
+	Next
+EndFunc   ;==>WriteModList
+
+Func UpdateModNameList($sSteamCmdDir, $sMod)
+	Local $hSearch = FileFindFirstFile($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod & "\*.pak")
 	If $hSearch = -1 Then
 		LogWrite("Error: No Mod Files Found.")
 		Return False
 	Else
-		FileDelete($sModFile)
+		Local $sFileName = FileFindNextFile($hSearch)
+		IniWrite($g_c_sMODIDFile, "MODID2MODNAME", $sMod, $sFileName)
 	EndIf
-
-	Local $sFileName = ""
-
-	While 1
-		$sFileName = FileFindNextFile($hSearch)
-		; If there is no more file matching the search.
-		If @error Then ExitLoop
-		FileWriteLine($sModFile, $sFileName)
-	WEnd
 	FileClose($hSearch)
-EndFunc   ;==>WriteModList
+EndFunc   ;==>UpdateModNameList
 
 Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
 	Local $bReturn = False
@@ -1007,7 +1015,7 @@ Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
 		EndIf
 		RunWait("" & $sSteamCmdDir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +workshop_download_item 440900 " & $sMod & " +exit")
 		If FileExists($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod) Then
-			;Write File name to INI IniWrite(hiddnen_ini, "MODID = MODFILENAME.pak", "$sMod", MODNAME.pak)
+			UpdateModNameList($sSteamCmdDir, $sMod)
 			FileMove($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod & "\*.pak", $sServerDir & "\ConanSandbox\Mods\", 1 + 8)
 			DirRemove($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod, 1)
 		EndIf
@@ -1034,7 +1042,7 @@ Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
 
 	Return $bReturn
 EndFunc   ;==>UpdateMod
-#EndRegion
+#EndRegion ;**** Functions to Check for Mod Updates ****
 
 #Region ;**** Functions for Multiple Passwords and Hiding Password ****
 Func PassCheck($sPass, $sPassString)
@@ -1086,7 +1094,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.12.1 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.13.0-beta.1 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -1101,6 +1109,19 @@ If $UseSteamCMD = "yes" Then
 				$serverdir & "\steamapps\appmanifest_443030.acf before running SteamCMD" & @CRLF & @CRLF & "Would you like to Exit Now?", 20)
 		If $manifestFound = 6 Then
 			Exit
+		EndIf
+	EndIf
+	Local Const $sModManifest = "\steamapps\workshop\appworkshop_440900.acf"
+	If FileExists($serverdir & $sModManifest) And Not FileExists($g_c_sMODIDFile) Then
+		Local $ModListNotFound = MsgBox(4100, "Warning", "Existing Mods found, but there is no Mod ID to Mod Name file. If you continue all of your mods will be downloaded again " & _
+				"so modlist.txt can be ordered properly. Exit and refer to README if you don't wish to download mods again." & @CRLF & @CRLF & "Would you like to Exit Now?")
+		If $ModListNotFound = 6 Then
+			FileWrite($g_c_sMODIDFile, "[File for Matching Mod to Name]")
+			IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
+			Exit
+		Else
+			IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
+			FileSetAttrib($g_c_sMODIDFile, "+H")
 		EndIf
 	EndIf
 Else
