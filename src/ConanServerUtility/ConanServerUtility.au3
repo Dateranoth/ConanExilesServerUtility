@@ -1007,6 +1007,7 @@ Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
 		EndIf
 		RunWait("" & $sSteamCmdDir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +workshop_download_item 440900 " & $sMod & " +exit")
 		If FileExists($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod) Then
+			;Write File name to INI IniWrite(hiddnen_ini, "MODID = MODFILENAME.pak", "$sMod", MODNAME.pak)
 			FileMove($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod & "\*.pak", $sServerDir & "\ConanSandbox\Mods\", 1 + 8)
 			DirRemove($sSteamCmdDir & "\steamapps\workshop\content\440900\" & $sMod, 1)
 		EndIf
