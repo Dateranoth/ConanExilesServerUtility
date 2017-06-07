@@ -1121,7 +1121,7 @@ If $UseSteamCMD = "yes" Then
 				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
 				Exit
 			Else
-				FileDelete($serverdir & $sModManifest)
+				FileMove($serverdir & $sModManifest, $serverdir & $sModManifest & ".BAK")
 				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
 				FileSetAttrib($g_c_sMODIDFile, "+H")
 			EndIf
