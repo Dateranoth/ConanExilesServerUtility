@@ -1111,17 +1111,20 @@ If $UseSteamCMD = "yes" Then
 			Exit
 		EndIf
 	EndIf
-	Local Const $sModManifest = "\steamapps\workshop\appworkshop_440900.acf"
-	If FileExists($serverdir & $sModManifest) And Not FileExists($g_c_sMODIDFile) Then
-		Local $ModListNotFound = MsgBox(4100, "Warning", "Existing Mods found, but there is no Mod ID to Mod Name file. If you continue all of your mods will be downloaded again " & _
-				"so modlist.txt can be ordered properly. Exit and refer to README if you don't wish to download mods again." & @CRLF & @CRLF & "Would you like to Exit Now?")
-		If $ModListNotFound = 6 Then
-			FileWrite($g_c_sMODIDFile, "[File for Matching Mod to Name]")
-			IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
-			Exit
-		Else
-			IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
-			FileSetAttrib($g_c_sMODIDFile, "+H")
+	If $g_sUpdateMods = "yes" Then
+		Local Const $sModManifest = "\steamapps\workshop\appworkshop_440900.acf"
+		If FileExists($serverdir & $sModManifest) And Not FileExists($g_c_sMODIDFile) Then
+			Local $ModListNotFound = MsgBox(4100, "Warning", "Existing Mods found, but there is no Mod ID to Mod Name file. If you continue all of your mods will be downloaded again " & _
+					"so modlist.txt can be ordered properly. Exit and refer to README if you don't wish to download mods again." & @CRLF & @CRLF & "Would you like to Exit Now?")
+			If $ModListNotFound = 6 Then
+				FileWrite($g_c_sMODIDFile, "[File for Matching Mod to Name]")
+				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
+				Exit
+			Else
+				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
+				FileSetAttrib($g_c_sMODIDFile, "+H")
+			EndIf
+
 		EndIf
 	EndIf
 Else
