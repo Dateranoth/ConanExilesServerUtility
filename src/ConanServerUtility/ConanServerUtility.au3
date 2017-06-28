@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.13.0-beta.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.13.0-beta.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.13.0-beta.2.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.13.0-beta.2.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - June 6, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - June 28, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.13.0-beta.1
+#AutoIt3Wrapper_Res_Fileversion=2.13.0-beta.2
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -24,7 +24,7 @@ Global $g_sTimeCheck4 = _NowCalc()
 Global Const $g_c_sServerEXE = "ConanSandboxServer-Win64-Test.exe"
 Global Const $g_c_sPIDFile = @ScriptDir & "\ConanServerUtility_lastpid_tmp"
 Global Const $g_c_sHwndFile = @ScriptDir & "\ConanServerUtility_lasthwnd_tmp"
-Global Const $g_c_sMODIDFile = @ScriptDir & "\ConanServerUtility_modid2modname_tmp"
+Global Const $g_c_sMODIDFile = @ScriptDir & "\ConanServerUtility_modid2modname.ini"
 Global Const $g_c_sLogFile = @ScriptDir & "\ConanServerUtility.log"
 Global Const $g_c_sIniFile = @ScriptDir & "\ConanServerUtility.ini"
 Global $g_iIniFail = 0
@@ -961,11 +961,12 @@ Func CheckMod($sMods, $sSteamCmdDir, $sServerDir)
 			If $bStopUpdate Then ExitLoop
 		EndIf
 	Next
+	WriteModList($sServerDir)
 EndFunc   ;==>CheckMod
 
 Func WriteModList($sServerDir)
 	Local $sModFile = $sServerDir & "\ConanSandbox\Mods\modlist.txt"
-	FileDelete($sModFile)
+	FileMove($sModFile, $sModFile & ".BAK", 9)
 	Local $aMods = StringSplit($g_sMods, ",")
 	Local $sModName = ""
 	For $i = 1 To $aMods[0]
@@ -1022,7 +1023,6 @@ Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
 		If FileExists($sSteamCmdDir & $sModManifest) Then
 			FileMove($sSteamCmdDir & $sModManifest, $sServerDir & "\steamapps\workshop\appworkshop_440900.acf", 1 + 8)
 		EndIf
-		WriteModList($sServerDir)
 		Switch $iReason
 			Case 0
 				LogWrite("No mod manifest existed. Downloaded First Mod " & $sMod & " to create Manifest. Should only see this once.")
@@ -1094,7 +1094,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.13.0-beta.1 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.13.0-beta.2 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -1115,15 +1115,15 @@ If $UseSteamCMD = "yes" Then
 		Local Const $sModManifest = "\steamapps\workshop\appworkshop_440900.acf"
 		If FileExists($serverdir & $sModManifest) And Not FileExists($g_c_sMODIDFile) Then
 			Local $ModListNotFound = MsgBox(4100, "Warning", "Existing Mods found, but there is no Mod ID to Mod Name file. If you continue all of your mods will be downloaded again " & _
-					"so modlist.txt can be ordered properly. Exit and refer to README if you don't wish to download mods again." & @CRLF & @CRLF & "Would you like to Exit Now?")
+					"so modlist.txt can be ordered properly. Exit and refer to README if you don't wish to download mods again." & @CRLF & @CRLF & "Continue? (Press No to Exit)")
 			If $ModListNotFound = 6 Then
+				FileMove($serverdir & $sModManifest, $serverdir & $sModManifest & ".BAK", 9)
 				FileWrite($g_c_sMODIDFile, "[File for Matching Mod to Name]")
-				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
-				Exit
+				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "EXAMPLE_MODID", "EXAMPLE_MODNAME.pak")
 			Else
-				FileMove($serverdir & $sModManifest, $serverdir & $sModManifest & ".BAK")
-				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "MODID", "MODNAME.pak")
-				FileSetAttrib($g_c_sMODIDFile, "+H")
+				FileWrite($g_c_sMODIDFile, "[File for Matching Mod to Name]")
+				IniWrite($g_c_sMODIDFile, "MODID2MODNAME", "EXAMPLE_MODID", "EXAMPLE_MODNAME.pak")
+				Exit
 			EndIf
 
 		EndIf
@@ -1247,11 +1247,11 @@ While True ;**** Loop Until Closed ****
 		EndIf
 		$g_hConanhWnd = WinGetHandle(WinWait("" & $serverdir & "", "", 70))
 		If $SteamFix = "yes" Then
-			WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", 5)
+			WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", 10)
 			If WinExists("" & $g_c_sServerEXE & " - Entry Point Not Found") Then
 				ControlSend("" & $g_c_sServerEXE & " - Entry Point Not Found", "", "", "{enter}")
 			EndIf
-			WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", 5)
+			WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", 10)
 			If WinExists("" & $g_c_sServerEXE & " - Entry Point Not Found") Then
 				ControlSend("" & $g_c_sServerEXE & " - Entry Point Not Found", "", "", "{enter}")
 			EndIf
