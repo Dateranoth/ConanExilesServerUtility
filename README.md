@@ -14,6 +14,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Optionally Disable MULTIHOME to fix some connection problems
 *   Optionally Restart the server daily at a certain time (Up to 6 different times through the day)
 *   Optionally Use Remote Restart Utility to Restart server remotely using unique passwords (Optionally Set Users) and port
+*   Optionally Use SteamCMD for automatic updates ( SteamCMD will be downloaded if not found )
 *   Optionally Compare running server version with released version for automatic Update (In 5 to XX minute intervals)
     * *UPDATE CHECK REQUIRES THE SCRIPT CAN WRITE TO SteamCMD directory*
 *   Optionally run verification every time SteamCMD is ran
