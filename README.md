@@ -14,7 +14,6 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Optionally Disable MULTIHOME to fix some connection problems
 *   Optionally Restart the server daily at a certain time (Up to 6 different times through the day)
 *   Optionally Use Remote Restart Utility to Restart server remotely using unique passwords (Optionally Set Users) and port
-*   Optionally Use SteamCMD to automatically update server
 *   Optionally Compare running server version with released version for automatic Update (In 5 to XX minute intervals)
     * *UPDATE CHECK REQUIRES THE SCRIPT CAN WRITE TO SteamCMD directory*
 *   Optionally run verification every time SteamCMD is ran
@@ -27,6 +26,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Schedule when player buildings can be damaged and restart when needed.
 *   Schedule when Avatars are allowed and restart when needed.
 *   **Download and Update Mods Automatically!**
+*   Automatically Sort Mods in modlist.txt by order you choose.
 
 # Conan Remote Restart Features
 *   If enabled on the server, use to remotely restart the server.
@@ -229,5 +229,18 @@ The first time this is ran and a server is not running it will copy all missing 
 
 If `IniOverwriteFix=no`
 Schedules may or may not work, and it is possible that your server will be stuck in a restart loop. It is suggested that you leave this set to `yes`
+
+
+### How to Sort Mods in Specific Order
+To sort mods in a specific order, simply list them in the INI file in the order you wish them to load.
+
+**Example**
+I want to install mod ID 12345678 (conanstuff) & mod ID 87654321 (moreconanstuff) in order of moreconanstuff, conanstuff.
+
+In the INI I fill out:
+```
+ModList=87654321,12345678
+```
+**DO NOT DELETE ConanServerUtility_modid2modname.ini**
 
 # END
