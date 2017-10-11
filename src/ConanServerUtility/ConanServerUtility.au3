@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.15.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.15.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.16.0.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.16.0.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - July 7, 2017
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.15.1
+#AutoIt3Wrapper_Res_Fileversion=2.16.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -171,6 +171,7 @@ Func ReadUini()
 	Global $g_sAvatarsDisabledTimes = IniRead($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "AvatarsDisabledSchedule", $iniCheck)
 	Global $g_sFlipAvatarSchedule = IniRead($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "FlipAvatarSchedule", $iniCheck)
 	Global $g_sIniOverwriteFix = IniRead($g_c_sIniFile, "Bug Fix - Copy from then Delete Default Server Settings INI? yes/no", "IniOverwriteFix", $iniCheck)
+	Global $g_sExtraServerCommands = IniRead($g_c_sIniFile, "Extra Command Line Options. Leave Blank if Not Using", "ExtraServerCommands", $iniCheck)
 
 	If $iniCheck = $BindIP Then
 		$BindIP = "yes"
@@ -394,6 +395,10 @@ Func ReadUini()
 		$g_sIniOverwriteFix = "yes"
 		$g_iIniFail += 1
 	EndIf
+	If $iniCheck = $g_sExtraServerCommands Then
+		$g_sExtraServerCommands = ""
+		$g_iIniFail =+ 1
+	EndIf
 	If $g_iIniFail > 0 Then
 		iniFileCheck()
 	EndIf
@@ -501,6 +506,7 @@ Func UpdateIni()
 	IniWrite($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "AvatarsDisabledSchedule", $g_sAvatarsDisabledTimes)
 	IniWrite($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "FlipAvatarSchedule", $g_sFlipAvatarSchedule)
 	IniWrite($g_c_sIniFile, "Bug Fix - Copy from then Delete Default Server Settings INI? yes/no", "IniOverwriteFix", $g_sIniOverwriteFix)
+	IniWrite($g_c_sIniFile, "Extra Command Line Options. Leave Blank if Not Using", "ExtraServerCommands", $g_sExtraServerCommands)
 EndFunc   ;==>UpdateIni
 #EndRegion ;**** INI Settings - User Variables ****
 
@@ -1157,7 +1163,7 @@ EndFunc   ;==>_TCP_Server_ClientIP
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.15.1 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.16.0 Started")
 ReadUini()
 
 If $UseSteamCMD = "yes" Then
@@ -1288,20 +1294,15 @@ While True ;**** Loop Until Closed ****
 		If $g_sEnableAvatarSchedule = "yes" Then
 			AvatarCheck($g_bFlipAvatarSchedule)
 		EndIf
+		If StringLen($g_sExtraServerCommands) > 0 Then
+			$g_sExtraServerCommands = " " & $g_sExtraServerCommands
+		EndIf
 		If $BindIP = "no" Then
-			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log")
-			If $sObfuscatePass = "yes" Then
-				FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
-			Else
-				FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
-			EndIf
+			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands)
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands & "]")
 		Else
-			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log")
-			If $sObfuscatePass = "yes" Then
-				FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
-			Else
-				FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log]")
-			EndIf
+			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands)
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands & "]")
 		EndIf
 		If @error Or Not $g_sConanPID Then
 			If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
