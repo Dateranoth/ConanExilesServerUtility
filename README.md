@@ -246,4 +246,34 @@ ModList=87654321,12345678
 ```
 **DO NOT DELETE ConanServerUtility_modid2modname.ini**
 
+# Request Restart From Browser
+**You can now send restart commands from any Web Browser**
+
+Restart commands are now expecting HTTP headers, and can be sent to the server from a web browser using the format ```http://IP:PORT?restart=user_pass```.  The utility will respond if the password is accepted or not. There is also a limit for max password attempts. After 15 tries in 10 minutes the requesting IP will be locked out for 10 minutes. 
+
+404 Responses will be sent if the RestartKey does not match or the header is incorrect.  You can enable Debugging for a full output to the log what is being received by the server if you have any trouble.
+
+**These Are the Allowed Characters in the RestartCode (Password)**
+```1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@$%^&*()+=-{}[]\|:;./?```
+
+### Begin Usage Example===>
+```
+INI SETTINGS
+[Game Server IP]
+ListenIP=192.168.0.1
+[Use Remote Restart ?yes/no]
+UseRemoteRestart=yes
+[Remote Restart Port]
+ListenPort=57520
+[Remote Restart Request Key http://IP:Port?KEY=user_pass]
+RestartKey=restart
+[Remote Restart Password]
+RestartCode=Admin1_Pass1,Admin2_Pass2
+```
+
+In a standard web browser I would type in the URL ```http://192.168.0.1:57520?restart=Admin1_Pass1```
+The Server would compare the pass and find that it is correct. It would respond with ```200 OK```
+And HTML Code stating the server is restarting.
+### <===End Usage Example
+
 # END
