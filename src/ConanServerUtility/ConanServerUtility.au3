@@ -726,7 +726,7 @@ EndIf
 While True ;**** Loop Until Closed ****
 	#Region ;**** Listen for Remote Restart Request ****
 	If $UseRemoteRestart = "yes" Then
-		Local $sRestart = _RemoteRestart($MainSocket, $RestartCode, $sObfuscatePass, $g_IP, $ServerName, $g_bDebug)
+		Local $sRestart = _RemoteRestart($MainSocket, $RestartCode, $g_sRKey, $sObfuscatePass, $g_IP, $ServerName, $g_bDebug)
 		Switch @error
 			Case 0
 				If ProcessExists($g_sConanPID) Then

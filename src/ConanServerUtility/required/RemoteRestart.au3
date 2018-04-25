@@ -11,10 +11,11 @@
 ; Name...........: _RemoteRestart
 ; Description ...: Receives TCP string from GET request and checks against list of known passwords.
 ;				   Expects GET /?restart=user_pass HTTP/x.x
-; Syntax.........: RemoteRestart($vMSocket, $sCodes, [$sHideCodes = "no", [$sServIP = "0.0.0.0", [$sName = "Server", [$bDebug = False]]]])
+; Syntax.........: RemoteRestart($vMSocket, $sCodes, [$sKey = "restart", $sHideCodes = "no", [$sServIP = "0.0.0.0", [$sName = "Server", [$bDebug = False]]]]])
 ; Parameters ....: $vMSocket - Main Socket to Accept TCP Requests on. Should already be open from TCPListen
 ;                  $sCodes - Comma Seperated list of user1_password1,user2_password2,password3
 ;							 Allowed Characters: abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@$%^&*()+=-{}[]\|:;./?
+;				   $sKey - Key to match before matching password. http://IP:Pass?KEY=user_pass
 ;                  $sHideCodes - Obfuscate codes or not, yes/no string
 ;                  $sServIP - IP  to send back in Header Response.
 ;				   $sName - Server Name to use in HTML Response.
@@ -84,9 +85,9 @@ EndFunc   ;==>_TCP_Server_ClientIP
 #EndRegion ;**** Function to get IP from Restart Client ****
 
 #Region ;**** Function to Check Request from Browswer and return restart string if request is valid****
-Func CheckHTTPReq($sRequest)
+Func CheckHTTPReq($sRequest, $sKey = "restart")
 	If IsString($sRequest) Then
-		Local $aRequest = StringRegExp($sRequest, '^GET[[:blank:]]\/\?(?i)restart(?-i)=(\S+)[[:blank:]]HTTP\/\d.\d\R', 2)
+		Local $aRequest = StringRegExp($sRequest, '^GET[[:blank:]]\/\?(?i)' & $sKey & '(?-i)=(\S+)[[:blank:]]HTTP\/\d.\d\R', 2)
 		If Not @error Then
 			Return SetError(0, 0, $aRequest[1])
 		ElseIf @error = 1 Then
@@ -130,7 +131,7 @@ EndFunc   ;==>MultipleAttempts
 #EndRegion ;**** Function to Check for Multiple Password Failures****
 
 #Region ;**** Uses other Functions to check connection, verify request is valid, verify restart code is correct, gather IP, and send proper message back to User depending on request received****
-Func _RemoteRestart($vMSocket, $sCodes, $sHideCodes = "no", $sServIP = "0.0.0.0", $sName = "Server", $bDebug = False)
+Func _RemoteRestart($vMSocket, $sCodes, $sKey = "restart", $sHideCodes = "no", $sServIP = "0.0.0.0", $sName = "Server", $bDebug = False)
 	Local $vConnectedSocket = TCPAccept($vMSocket)
 	If $vConnectedSocket >= 0 Then
 		Local $sRecvIP = _TCP_Server_ClientIP($vConnectedSocket)
@@ -138,12 +139,12 @@ Func _RemoteRestart($vMSocket, $sCodes, $sHideCodes = "no", $sServIP = "0.0.0.0"
 		Local $iError = 0
 		Local $iExtended = 0
 		If @error = 0 Then
-			Local $sRecvPass = CheckHTTPReq($sRECV)
+			Local $sRecvPass = CheckHTTPReq($sRECV, $sKey)
 			If @error = 0 Then
 				Local $sCheckMaxAttempts = MultipleAttempts($sRecvIP)
 				If @error = 1 Then
-					TCPSend($vConnectedSocket, "HTTP/1.1 403 Forbidden" & @CRLF & "Connection: close" & @CRLF & "Content-Type: text/html; charset=iso-8859-1" & @CRLF & "Cache-Control: no-cache" & @CRLF & "Server: " & $sServIP & @CRLF & @CRLF)
-					TCPSend($vConnectedSocket, "<!DOCTYPE HTML><html><head><link rel='icon' href='data:;base64,iVBORw0KGgo='><title>" & $sName & " Remote Restart</title></head><body><h1>403 Forbidden</h1><p>You tried to Restart " & $sName & " 15 times in a row.<BR>" & $sCheckMaxAttempts & "</body></html>")
+					TCPSend($vConnectedSocket, "HTTP/1.1 429 Too Many Requests" & @CRLF & "Retry-After: 600" & @CRLF & "Connection: close" & @CRLF & "Content-Type: text/html; charset=iso-8859-1" & @CRLF & "Cache-Control: no-cache" & @CRLF & "Server: " & $sServIP & @CRLF & @CRLF)
+					TCPSend($vConnectedSocket, "<!DOCTYPE HTML><html><head><link rel='icon' href='data:;base64,iVBORw0KGgo='><title>" & $sName & " Remote Restart</title></head><body><h1>429 Too Many Requests</h1><p>You tried to Restart " & $sName & " 15 times in a row.<BR>" & $sCheckMaxAttempts & "</body></html>")
 					If $vConnectedSocket <> -1 Then TCPCloseSocket($vConnectedSocket)
 					Return SetError(1, 0, "Restart ATTEMPT by Remote Host: " & $sRecvIP & " | Wrong Code was entered 15 times. User must wait 10 minutes before trying again.")
 				EndIf
@@ -176,7 +177,7 @@ Func _RemoteRestart($vMSocket, $sCodes, $sHideCodes = "no", $sServIP = "0.0.0.0"
 					Else
 						$sRECV = "Full TCP Request: " & @CRLF & $sRECV
 					EndIf
-					Return SetError(2, 0, "Invalid Restart Request by: " & $sRecvIP & ". Should be in the format of GET /?restart=user_pass HTTP/x.x | " & $sRECV)
+					Return SetError(2, 0, "Invalid Restart Request by: " & $sRecvIP & ". Should be in the format of GET /?" & $sKey & "=user_pass HTTP/x.x | " & $sRECV)
 				Else
 					;This Shouldn't Happen
 					Return SetError(3, 0, "CheckHTTPReq Failed with Error: " & $iError & " Extended: " & $iExtended & " [" & $sRecvPass & "]")

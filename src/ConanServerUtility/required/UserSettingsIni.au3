@@ -31,6 +31,7 @@ Func ReadUini($sIniFile, $sLogFile)
 	Global $validategame = IniRead($sIniFile, "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", $iniCheck)
 	Global $UseRemoteRestart = IniRead($sIniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $iniCheck)
 	Global $g_Port = IniRead($sIniFile, "Remote Restart Port", "ListenPort", $iniCheck)
+	Global $g_sRKey = IniRead($sIniFile, "Remote Restart Request Key http://IP:Port?KEY=user_pass", "RestartKey", $iniCheck)
 	Global $RestartCode = IniRead($sIniFile, "Remote Restart Password", "RestartCode", $iniCheck)
 	Global $sObfuscatePass = IniRead($sIniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $iniCheck)
 	Global $CheckForUpdate = IniRead($sIniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $iniCheck)
@@ -126,6 +127,10 @@ Func ReadUini($sIniFile, $sLogFile)
 	EndIf
 	If $iniCheck = $g_Port Then
 		$g_Port = "57520"
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sRKey Then
+		$g_sRKey = "restart"
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $RestartCode Then
@@ -378,6 +383,7 @@ Func UpdateIni($sIniFile)
 	IniWrite($sIniFile, "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", $validategame)
 	IniWrite($sIniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $UseRemoteRestart)
 	IniWrite($sIniFile, "Remote Restart Port", "ListenPort", $g_Port)
+	IniWrite($sIniFile, "Remote Restart Request Key http://IP:Port?KEY=user_pass", "RestartKey", $g_sRKey)
 	IniWrite($sIniFile, "Remote Restart Password", "RestartCode", $RestartCode)
 	IniWrite($sIniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $sObfuscatePass)
 	IniWrite($sIniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $CheckForUpdate)
