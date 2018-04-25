@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v2.16.0.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v2.16.0.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.0.0.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.0.0.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - July 7, 2017
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - April 24, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=2.16.0
+#AutoIt3Wrapper_Res_Fileversion=3.0.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -15,68 +15,9 @@
 ;Distributed Under GNU GENERAL PUBLIC LICENSE
 
 #include <Date.au3>
-
-#Region ;**** UnZip Function by trancexx ****
-; #FUNCTION# ;===============================================================================
-;
-; Name...........: _ExtractZip
-; Description ...: Extracts file/folder from ZIP compressed file
-; Syntax.........: _ExtractZip($sZipFile, $sFolderStructure, $sFile, $sDestinationFolder)
-; Parameters ....: $sZipFile - full path to the ZIP file to process
-;                  $sFolderStructure - 'path' to the file/folder to extract inside ZIP file
-;                  $sFile - file/folder to extract
-;                  $sDestinationFolder - folder to extract to. Must exist.
-; Return values .: Success - Returns 1
-;                          - Sets @error to 0
-;                  Failure - Returns 0 sets @error:
-;                  |1 - Shell Object creation failure
-;                  |2 - Destination folder is unavailable
-;                  |3 - Structure within ZIP file is wrong
-;                  |4 - Specified file/folder to extract not existing
-; Author ........: trancexx
-; https://www.autoitscript.com/forum/topic/101529-sunzippings-zipping/#comment-721866
-;
-;==========================================================================================
-Func _ExtractZip($sZipFile, $sFolderStructure, $sFile, $sDestinationFolder)
-
-	Local $i
-	Do
-		$i += 1
-		$sTempZipFolder = @TempDir & "\Temporary Directory " & $i & " for " & StringRegExpReplace($sZipFile, ".*\\", "")
-	Until Not FileExists($sTempZipFolder) ; this folder will be created during extraction
-
-	Local $oShell = ObjCreate("Shell.Application")
-
-	If Not IsObj($oShell) Then
-		Return SetError(1, 0, 0) ; highly unlikely but could happen
-	EndIf
-
-	Local $oDestinationFolder = $oShell.NameSpace($sDestinationFolder)
-	If Not IsObj($oDestinationFolder) Then
-		Return SetError(2, 0, 0) ; unavailable destionation location
-	EndIf
-
-	Local $oOriginFolder = $oShell.NameSpace($sZipFile & "\" & $sFolderStructure) ; FolderStructure is overstatement because of the available depth
-	If Not IsObj($oOriginFolder) Then
-		Return SetError(3, 0, 0) ; unavailable location
-	EndIf
-
-	;Local $oOriginFile = $oOriginFolder.Items.Item($sFile)
-	Local $oOriginFile = $oOriginFolder.ParseName($sFile)
-	If Not IsObj($oOriginFile) Then
-		Return SetError(4, 0, 0) ; no such file in ZIP file
-	EndIf
-
-	; copy content of origin to destination
-	$oDestinationFolder.CopyHere($oOriginFile, 4) ; 4 means "do not display a progress dialog box", but apparently doesn't work
-
-	DirRemove($sTempZipFolder, 1) ; clean temp dir
-
-	Return 1 ; All OK!
-
-EndFunc   ;==>_ExtractZip
-#EndRegion ;**** UnZip Function by trancexx ****
-
+#include "required\RemoteRestart.au3"
+#include "required\UnZip.au3"
+#include "required\UserSettingsIni.au3"
 
 #Region ;**** Global Variables ****
 Global $g_sTimeCheck0 = _NowCalc()
@@ -90,7 +31,7 @@ Global Const $g_c_sHwndFile = @ScriptDir & "\ConanServerUtility_lasthwnd_tmp"
 Global Const $g_c_sMODIDFile = @ScriptDir & "\ConanServerUtility_modid2modname.ini"
 Global Const $g_c_sLogFile = @ScriptDir & "\ConanServerUtility.log"
 Global Const $g_c_sIniFile = @ScriptDir & "\ConanServerUtility.ini"
-Global $g_iIniFail = 0
+;Global $g_iIniFail = 0
 Global $g_iBeginDelayedShutdown = 0
 Global $g_iDelayShutdownTime = 0
 Global $g_sServerSettingIniLoc = "\ConanSandbox\saved\Config\WindowsServer\ServerSettings.ini"
@@ -106,409 +47,6 @@ Else
 	Global $g_hConanhWnd = "0"
 EndIf
 #EndRegion ;**** Global Variables ****
-
-
-
-#Region ;**** INI Settings - User Variables ****
-Func ReadUini()
-	Local $iniCheck = ""
-	Local $aChar[3]
-	For $i = 1 To 13
-		$aChar[0] = Chr(Random(97, 122, 1)) ;a-z
-		$aChar[1] = Chr(Random(48, 57, 1)) ;0-9
-		$iniCheck &= $aChar[Random(0, 1, 1)]
-	Next
-
-	Global $BindIP = IniRead($g_c_sIniFile, "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", $iniCheck)
-	Global $g_IP = IniRead($g_c_sIniFile, "Game Server IP", "ListenIP", $iniCheck)
-	Global $GamePort = IniRead($g_c_sIniFile, "Game Server Port", "GamePort", $iniCheck)
-	Global $QueryPort = IniRead($g_c_sIniFile, "Steam Query Port", "QueryPort", $iniCheck)
-	Global $ServerName = IniRead($g_c_sIniFile, "Server Name", "ServerName", $iniCheck)
-	Global $ServerPass = IniRead($g_c_sIniFile, "Server Password", "ServerPass", $iniCheck)
-	Global $AdminPass = IniRead($g_c_sIniFile, "Admin Password", "AdminPass", $iniCheck)
-	Global $MaxPlayers = IniRead($g_c_sIniFile, "Max Players", "MaxPlayers", $iniCheck)
-	Global $serverdir = IniRead($g_c_sIniFile, "Server Directory. NO TRAILING SLASH", "serverdir", $iniCheck)
-	Global $UseSteamCMD = IniRead($g_c_sIniFile, "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", $iniCheck)
-	Global $steamcmddir = IniRead($g_c_sIniFile, "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", $iniCheck)
-	Global $validategame = IniRead($g_c_sIniFile, "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", $iniCheck)
-	Global $UseRemoteRestart = IniRead($g_c_sIniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $iniCheck)
-	Global $g_Port = IniRead($g_c_sIniFile, "Remote Restart Port", "ListenPort", $iniCheck)
-	Global $RestartCode = IniRead($g_c_sIniFile, "Remote Restart Password", "RestartCode", $iniCheck)
-	Global $sObfuscatePass = IniRead($g_c_sIniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $iniCheck)
-	Global $CheckForUpdate = IniRead($g_c_sIniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $iniCheck)
-	Global $UpdateInterval = IniRead($g_c_sIniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $iniCheck)
-	Global $g_sUpdateMods = IniRead($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "CheckForModUpdate", $iniCheck)
-	Global $g_sMods = IniRead($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "ModList", $iniCheck)
-	Global $RestartDaily = IniRead($g_c_sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $iniCheck)
-	Global $HotHour1 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour1", $iniCheck)
-	Global $HotHour2 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour2", $iniCheck)
-	Global $HotHour3 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour3", $iniCheck)
-	Global $HotHour4 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour4", $iniCheck)
-	Global $HotHour5 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour5", $iniCheck)
-	Global $HotHour6 = IniRead($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour6", $iniCheck)
-	Global $HotMin = IniRead($g_c_sIniFile, "Daily Restart Minute? 00-59", "HotMin", $iniCheck)
-	Global $ExMem = IniRead($g_c_sIniFile, "Excessive Memory Amount?", "ExMem", $iniCheck)
-	Global $ExMemRestart = IniRead($g_c_sIniFile, "Restart On Excessive Memory Use? yes/no", "ExMemRestart", $iniCheck)
-	Global $SteamFix = IniRead($g_c_sIniFile, "Running Server with Steam Open? (yes/no)", "SteamFix", $iniCheck)
-	Global $logRotate = IniRead($g_c_sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logRotate", $iniCheck)
-	Global $logQuantity = IniRead($g_c_sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $iniCheck)
-	Global $logHoursBetweenRotate = IniRead($g_c_sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $iniCheck)
-	Global $sUseDiscordBot = IniRead($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $iniCheck)
-	Global $sDiscordWebHookURLs = IniRead($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $iniCheck)
-	Global $sDiscordBotName = IniRead($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $iniCheck)
-	Global $bDiscordBotUseTTS = IniRead($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $iniCheck)
-	Global $sDiscordBotAvatar = IniRead($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $iniCheck)
-	Global $iDiscordBotNotifyTime = IniRead($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotTimeBeforeRestart", $iniCheck)
-	Global $sUseTwitchBot = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "UseTwitchBot", $iniCheck)
-	Global $sTwitchNick = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchNick", $iniCheck)
-	Global $sChatOAuth = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "ChatOAuth", $iniCheck)
-	Global $sTwitchChannels = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchChannels", $iniCheck)
-	Global $iTwitchBotNotifyTime = IniRead($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotTimeBeforeRestart", $iniCheck)
-	Global $g_sEnableBuildingDmgSchedule = IniRead($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "EnableBuildingDamageSchedule", $iniCheck)
-	Global $g_sBuildingDmgEnabledTimes = IniRead($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "BuildingDmgEnabledSchedule", $iniCheck)
-	Global $g_sFlipBuildingDmgSchedule = IniRead($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "FlipBuildingDmgSchedule", $iniCheck)
-	Global $g_sEnableAvatarSchedule = IniRead($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "EnableAvatarSchedule", $iniCheck)
-	Global $g_sAvatarsDisabledTimes = IniRead($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "AvatarsDisabledSchedule", $iniCheck)
-	Global $g_sFlipAvatarSchedule = IniRead($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "FlipAvatarSchedule", $iniCheck)
-	Global $g_sIniOverwriteFix = IniRead($g_c_sIniFile, "Bug Fix - Copy from then Delete Default Server Settings INI? yes/no", "IniOverwriteFix", $iniCheck)
-	Global $g_sExtraServerCommands = IniRead($g_c_sIniFile, "Extra Command Line Options. Leave Blank if Not Using", "ExtraServerCommands", $iniCheck)
-
-	If $iniCheck = $BindIP Then
-		$BindIP = "yes"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_IP Then
-		$g_IP = "127.0.0.1"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $GamePort Then
-		$GamePort = "7777"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $QueryPort Then
-		$QueryPort = "27015"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $ServerName Then
-		$ServerName = "Conan Server Utility Server"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $ServerPass Then
-		$ServerPass = ""
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $AdminPass Then
-		$AdminPass &= "_noHASHsymbol"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $MaxPlayers Then
-		$MaxPlayers = "20"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $serverdir Then
-		$serverdir = "C:\Game_Servers\Conan_Exiles_Server"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $UseSteamCMD Then
-		$UseSteamCMD = "yes"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $steamcmddir Then
-		$steamcmddir = "C:\Game_Servers\SteamCMD"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $validategame Then
-		$validategame = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $UseRemoteRestart Then
-		$UseRemoteRestart = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_Port Then
-		$g_Port = "57520"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $RestartCode Then
-		$RestartCode = "Admin1_" & $RestartCode
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $sObfuscatePass Then
-		$sObfuscatePass = "yes"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $CheckForUpdate Then
-		$CheckForUpdate = "yes"
-		$g_iIniFail += 1
-	ElseIf $CheckForUpdate = "yes" And $UseSteamCMD <> "yes" Then
-		$CheckForUpdate = "no"
-		FileWriteLine($g_c_sLogFile, _NowCalc() & " SteamCMD disabled. Disabling CheckForUpdate. Update will not work without SteamCMD to update it!")
-	EndIf
-	If $iniCheck = $UpdateInterval Then
-		$UpdateInterval = "15"
-		$g_iIniFail += 1
-	ElseIf $UpdateInterval < 5 Then
-		$UpdateInterval = 5
-	EndIf
-	If $iniCheck = $g_sUpdateMods Then
-		$g_sUpdateMods = "no"
-		$g_iIniFail += 1
-	ElseIf $g_sUpdateMods = "yes" And $CheckForUpdate <> "yes" Then
-		$g_sUpdateMods = "no"
-		FileWriteLine($g_c_sLogFile, _NowCalc() & " Server Update Check is Disabled. Disabling Mod Updates. Does not make sense to update Mods and Not Server!")
-	EndIf
-	If $iniCheck = $g_sMods Then
-		$g_sMods = "#########,#########"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $RestartDaily Then
-		$RestartDaily = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour1 Then
-		$HotHour1 = "00"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour2 Then
-		$HotHour2 = "00"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour3 Then
-		$HotHour3 = "00"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour4 Then
-		$HotHour4 = "00"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour5 Then
-		$HotHour5 = "00"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour6 Then
-		$HotHour6 = "00"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $HotMin Then
-		$HotMin = "01"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $ExMem Then
-		$ExMem = "6000000000"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $ExMemRestart Then
-		$ExMemRestart = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $SteamFix Then
-		$SteamFix = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $logRotate Then
-		$logRotate = "yes"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $logQuantity Then
-		$logQuantity = "10"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $logHoursBetweenRotate Then
-		$logHoursBetweenRotate = "24"
-		$g_iIniFail += 1
-	ElseIf $logHoursBetweenRotate < 1 Then
-		$logHoursBetweenRotate = 1
-	EndIf
-	If $iniCheck = $sUseDiscordBot Then
-		$sUseDiscordBot = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $sDiscordWebHookURLs Then
-		$sDiscordWebHookURLs = "https://discordapp.com/api/webhooks/XXXXXX/XXXX <- NO TRAILING SLASH AND USE FULL URL FROM WEBHOOK URL ON DISCORD"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $sDiscordBotName Then
-		$sDiscordBotName = "Conan Exiles Discord Bot"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $bDiscordBotUseTTS Then
-		$bDiscordBotUseTTS = "yes"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $sDiscordBotAvatar Then
-		$sDiscordBotAvatar = ""
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $iDiscordBotNotifyTime Then
-		$iDiscordBotNotifyTime = "5"
-		$g_iIniFail += 1
-	ElseIf $iDiscordBotNotifyTime < 1 Then
-		$iDiscordBotNotifyTime = 1
-	EndIf
-	If $iniCheck = $sUseTwitchBot Then
-		$sUseTwitchBot = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $sTwitchNick Then
-		$sTwitchNick = "twitchbotusername"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $sChatOAuth Then
-		$sChatOAuth = "oauth:1234 (Generate OAuth Token Here: https://twitchapps.com/tmi)"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $sTwitchChannels Then
-		$sTwitchChannels = "channel1,channel2,channel3"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $iTwitchBotNotifyTime Then
-		$iTwitchBotNotifyTime = "5"
-		$g_iIniFail += 1
-	ElseIf $iTwitchBotNotifyTime < 1 Then
-		$iTwitchBotNotifyTime = 1
-	EndIf
-	If $iniCheck = $g_sEnableBuildingDmgSchedule Then
-		$g_sEnableBuildingDmgSchedule = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_sBuildingDmgEnabledTimes Then
-		$g_sBuildingDmgEnabledTimes = "WDAY(Sunday1)-HHMMtoWDAY(Saturday7)-HHMM,1-0000to7-2359,6-2200to7-0500"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_sFlipBuildingDmgSchedule Then
-		$g_sFlipBuildingDmgSchedule = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_sEnableAvatarSchedule Then
-		$g_sEnableAvatarSchedule = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_sAvatarsDisabledTimes Then
-		$g_sAvatarsDisabledTimes = "WDAY(Sunday1)-HHMMtoWDAY(Saturday7)-HHMM,1-0000to7-2359,6-2200to7-0500"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_sFlipAvatarSchedule Then
-		$g_sFlipAvatarSchedule = "no"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_sIniOverwriteFix Then
-		$g_sIniOverwriteFix = "yes"
-		$g_iIniFail += 1
-	EndIf
-	If $iniCheck = $g_sExtraServerCommands Then
-		$g_sExtraServerCommands = ""
-		$g_iIniFail =+ 1
-	EndIf
-	If $g_iIniFail > 0 Then
-		iniFileCheck()
-	EndIf
-
-	If $bDiscordBotUseTTS = "yes" Then
-		$bDiscordBotUseTTS = True
-	Else
-		$bDiscordBotUseTTS = False
-	EndIf
-
-	If ($sUseDiscordBot = "yes") Then
-		$g_iDelayShutdownTime = $iDiscordBotNotifyTime
-		If ($sUseTwitchBot = "yes") And ($iTwitchBotNotifyTime > $g_iDelayShutdownTime) Then
-			$g_iDelayShutdownTime = $iTwitchBotNotifyTime
-		EndIf
-	Else
-		$g_iDelayShutdownTime = $iTwitchBotNotifyTime
-	EndIf
-
-	If $g_sFlipBuildingDmgSchedule = "yes" Then
-		Global $g_bFlipBuildingDmgSchedule = True
-	Else
-		Global $g_bFlipBuildingDmgSchedule = False
-	EndIf
-
-	If $g_sFlipAvatarSchedule = "yes" Then
-		Global $g_bFlipAvatarSchedule = True
-	Else
-		Global $g_bFlipAvatarSchedule = False
-	EndIf
-
-	If $g_sIniOverwriteFix = "yes" Then
-		Global $g_bIniOverwriteFix = True ; This enables deleting the DefaultServerSettings.INI. Only way to make ServerSettings.ini work properly.
-	Else
-		Global $g_bIniOverwriteFix = False
-	EndIf
-EndFunc   ;==>ReadUini
-
-Func iniFileCheck()
-	If FileExists($g_c_sIniFile) Then
-		Local $aMyDate, $aMyTime
-		_DateTimeSplit(_NowCalc(), $aMyDate, $aMyTime)
-		Local $iniDate = StringFormat("%04i.%02i.%02i.%02i%02i", $aMyDate[1], $aMyDate[2], $aMyDate[3], $aMyTime[1], $aMyTime[2])
-		FileMove($g_c_sIniFile, $g_c_sIniFile & "_" & $iniDate & ".bak", 1)
-		UpdateIni()
-		MsgBox(4096, "INI MISMATCH", "Found " & $g_iIniFail & " Missing Variables" & @CRLF & @CRLF & "Backup created and all existing settings transfered to new INI." & @CRLF & @CRLF & "Modify INI and restart.")
-		Exit
-	Else
-		UpdateIni()
-		MsgBox(4096, "Default INI File Made", "Please Modify Default Values and Restart Script")
-		Exit
-	EndIf
-EndFunc   ;==>iniFileCheck
-
-Func UpdateIni()
-	IniWrite($g_c_sIniFile, "Use MULTIHOME to Bind IP? Disable if having connection issues (yes/no)", "BindIP", $BindIP)
-	IniWrite($g_c_sIniFile, "Game Server IP", "ListenIP", $g_IP)
-	IniWrite($g_c_sIniFile, "Game Server Port", "GamePort", $GamePort)
-	IniWrite($g_c_sIniFile, "Steam Query Port", "QueryPort", $QueryPort)
-	IniWrite($g_c_sIniFile, "Server Name", "ServerName", $ServerName)
-	IniWrite($g_c_sIniFile, "Server Password", "ServerPass", $ServerPass)
-	IniWrite($g_c_sIniFile, "Admin Password", "AdminPass", $AdminPass)
-	IniWrite($g_c_sIniFile, "Max Players", "MaxPlayers", $MaxPlayers)
-	IniWrite($g_c_sIniFile, "Server Directory. NO TRAILING SLASH", "serverdir", $serverdir)
-	IniWrite($g_c_sIniFile, "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", $UseSteamCMD)
-	IniWrite($g_c_sIniFile, "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", $steamcmddir)
-	IniWrite($g_c_sIniFile, "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", $validategame)
-	IniWrite($g_c_sIniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $UseRemoteRestart)
-	IniWrite($g_c_sIniFile, "Remote Restart Port", "ListenPort", $g_Port)
-	IniWrite($g_c_sIniFile, "Remote Restart Password", "RestartCode", $RestartCode)
-	IniWrite($g_c_sIniFile, "Hide Passwords in Log? yes/no", "ObfuscatePass", $sObfuscatePass)
-	IniWrite($g_c_sIniFile, "Check for Update Every X Minutes? yes/no", "CheckForUpdate", $CheckForUpdate)
-	IniWrite($g_c_sIniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $UpdateInterval)
-	IniWrite($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "CheckForModUpdate", $g_sUpdateMods)
-	IniWrite($g_c_sIniFile, "Install Mods and Check for Update? yes/no", "ModList", $g_sMods)
-	IniWrite($g_c_sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $RestartDaily)
-	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour1", $HotHour1)
-	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour2", $HotHour2)
-	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour3", $HotHour3)
-	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour4", $HotHour4)
-	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour5", $HotHour5)
-	IniWrite($g_c_sIniFile, "Daily Restart Hours? 00-23", "HotHour6", $HotHour6)
-	IniWrite($g_c_sIniFile, "Daily Restart Minute? 00-59", "HotMin", $HotMin)
-	IniWrite($g_c_sIniFile, "Excessive Memory Amount?", "ExMem", $ExMem)
-	IniWrite($g_c_sIniFile, "Restart On Excessive Memory Use? yes/no", "ExMemRestart", $ExMemRestart)
-	IniWrite($g_c_sIniFile, "Running Server with Steam Open? (yes/no)", "SteamFix", $SteamFix)
-	IniWrite($g_c_sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logRotate", $logRotate)
-	IniWrite($g_c_sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $logQuantity)
-	IniWrite($g_c_sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $logHoursBetweenRotate)
-	IniWrite($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $sUseDiscordBot)
-	IniWrite($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $sDiscordWebHookURLs)
-	IniWrite($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $sDiscordBotName)
-	IniWrite($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotUseTTS", $bDiscordBotUseTTS)
-	IniWrite($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotAvatarLink", $sDiscordBotAvatar)
-	IniWrite($g_c_sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotTimeBeforeRestart", $iDiscordBotNotifyTime)
-	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "UseTwitchBot", $sUseTwitchBot)
-	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchNick", $sTwitchNick)
-	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "ChatOAuth", $sChatOAuth)
-	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchChannels", $sTwitchChannels)
-	IniWrite($g_c_sIniFile, "Use Twitch Bot to Send Message Before Restart? yes/no", "TwitchBotTimeBeforeRestart", $iTwitchBotNotifyTime)
-	IniWrite($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "EnableBuildingDamageSchedule", $g_sEnableBuildingDmgSchedule)
-	IniWrite($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "BuildingDmgEnabledSchedule", $g_sBuildingDmgEnabledTimes)
-	IniWrite($g_c_sIniFile, "Enable Building Damage by Scheduled Time? yes/no", "FlipBuildingDmgSchedule", $g_sFlipBuildingDmgSchedule)
-	IniWrite($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "EnableAvatarSchedule", $g_sEnableAvatarSchedule)
-	IniWrite($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "AvatarsDisabledSchedule", $g_sAvatarsDisabledTimes)
-	IniWrite($g_c_sIniFile, "Disable Avatars by Scheduled Time? yes/no", "FlipAvatarSchedule", $g_sFlipAvatarSchedule)
-	IniWrite($g_c_sIniFile, "Bug Fix - Copy from then Delete Default Server Settings INI? yes/no", "IniOverwriteFix", $g_sIniOverwriteFix)
-	IniWrite($g_c_sIniFile, "Extra Command Line Options. Leave Blank if Not Using", "ExtraServerCommands", $g_sExtraServerCommands)
-EndFunc   ;==>UpdateIni
-#EndRegion ;**** INI Settings - User Variables ****
 
 Func Gamercide()
 	If @exitMethod <> 1 Then
@@ -774,8 +312,13 @@ Func SendDiscordMsg($sHookURLs, $sBotMessage, $sBotName = "", $sBotTTS = False, 
 		$oHTTPOST.SetRequestHeader("Content-Type", "application/json")
 		$oHTTPOST.Send($sJsonMessage)
 		Local $oStatusCode = $oHTTPOST.Status
-		Local $oResponseText = $oHTTPOST.ResponseText
-		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} Message Response " & $oResponseText)
+		Local $sResponseText = ""
+		If NOT $g_bDebug Then
+			$sResponseText = "Enable Debugging to See Full Response Message"
+		Else
+			$sResponseText = "Message Response: " & $oHTTPOST.ResponseText
+		EndIf
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [Discord Bot] Message Status Code {" & $oStatusCode & "} " & $sResponseText)
 	Next
 EndFunc   ;==>SendDiscordMsg
 #EndRegion ;**** Function to Send Message to Discord ****
@@ -1113,58 +656,10 @@ Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
 EndFunc   ;==>UpdateMod
 #EndRegion ;**** Functions to Check for Mod Updates ****
 
-#Region ;**** Functions for Multiple Passwords and Hiding Password ****
-Func PassCheck($sPass, $sPassString)
-	Local $aPassReturn[3] = [False, "", ""]
-	Local $aPasswords = StringSplit($sPassString, ",")
-	For $i = 1 To $aPasswords[0]
-		If (StringCompare($sPass, $aPasswords[$i], 1) = 0) Then
-			Local $aUserPass = StringSplit($aPasswords[$i], "_")
-			If $aUserPass[0] > 1 Then
-				$aPassReturn[0] = True
-				$aPassReturn[1] = $aUserPass[1]
-				$aPassReturn[2] = $aUserPass[2]
-			Else
-				$aPassReturn[0] = True
-				$aPassReturn[1] = "Anonymous"
-				$aPassReturn[2] = $aUserPass[1]
-			EndIf
-			ExitLoop
-		EndIf
-	Next
-	Return $aPassReturn
-EndFunc   ;==>PassCheck
-
-Func ObfPass($sObfPassString)
-	Local $sObfPass = ""
-	For $i = 1 To (StringLen($sObfPassString) - 3)
-		If $i <> 4 Then
-			$sObfPass = $sObfPass & "*"
-		Else
-			$sObfPass = $sObfPass & StringMid($sObfPassString, 4, 4)
-		EndIf
-	Next
-	Return $sObfPass
-EndFunc   ;==>ObfPass
-#EndRegion ;**** Functions for Multiple Passwords and Hiding Password ****
-
-#Region ;**** Function to get IP from Restart Client ****
-Func _TCP_Server_ClientIP($hSocket)
-	Local $pSocketAddress, $aReturn
-	$pSocketAddress = DllStructCreate("short;ushort;uint;char[8]")
-	$aReturn = DllCall("ws2_32.dll", "int", "getpeername", "int", $hSocket, "ptr", DllStructGetPtr($pSocketAddress), "int*", DllStructGetSize($pSocketAddress))
-	If @error Or $aReturn[0] <> 0 Then Return $hSocket
-	$aReturn = DllCall("ws2_32.dll", "str", "inet_ntoa", "int", DllStructGetData($pSocketAddress, 3))
-	If @error Then Return $hSocket
-	$pSocketAddress = 0
-	Return $aReturn[0]
-EndFunc   ;==>_TCP_Server_ClientIP
-#EndRegion ;**** Function to get IP from Restart Client ****
-
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V2.16.0 Started")
-ReadUini()
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.0.0 Started")
+ReadUini($g_c_sIniFile, $g_c_sLogFile)
 
 If $UseSteamCMD = "yes" Then
 	Local $sFileExists = FileExists($steamcmddir & "\steamcmd.exe")
@@ -1231,34 +726,17 @@ EndIf
 While True ;**** Loop Until Closed ****
 	#Region ;**** Listen for Remote Restart Request ****
 	If $UseRemoteRestart = "yes" Then
-		Local $ConnectedSocket = TCPAccept($MainSocket)
-		If $ConnectedSocket >= 0 Then
-			$Count = 0
-			While $Count < 30
-				Local $sRECV = TCPRecv($ConnectedSocket, 512)
-				Local $aPassCompare = PassCheck($sRECV, $RestartCode)
-				If $sObfuscatePass = "yes" Then
-					$aPassCompare[2] = ObfPass($aPassCompare[2])
+		Local $sRestart = _RemoteRestart($MainSocket, $RestartCode, $sObfuscatePass, $g_IP, $ServerName, $g_bDebug)
+		Switch @error
+			Case 0
+				If ProcessExists($g_sConanPID) Then
+					Local $MEM = ProcessGetStats($g_sConanPID, 0)
+					FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [Work Memory:" & $MEM[0] & " | Peak Memory:" & $MEM[1] & "] " & $sRestart)
+					CloseServer()
 				EndIf
-				If $aPassCompare[0] Then
-					If ProcessExists($g_sConanPID) Then
-						Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
-						Local $MEM = ProcessGetStats($g_sConanPID, 0)
-						FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [Work Memory:" & $MEM[0] & " | Peak Memory:" & $MEM[1] & "] Restart Requested by Remote Host: " & $IP & " | User: " & $aPassCompare[1] & " | Pass: " & $aPassCompare[2])
-						CloseServer()
-						Sleep(10000)
-						ExitLoop
-					EndIf
-				Else
-					Local $IP = _TCP_Server_ClientIP($ConnectedSocket)
-					FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Restart ATTEMPT by Remote Host: " & $IP & " | Unknown Restart Code: " & $sRECV)
-					ExitLoop
-				EndIf
-				$Count += 1
-				Sleep(1000)
-			WEnd
-			If $ConnectedSocket <> -1 Then TCPCloseSocket($ConnectedSocket)
-		EndIf
+			Case 1 To 4
+				FileWriteLine($g_c_sLogFile, _NowCalc() & " " & $sRestart & @CRLF)
+		EndSwitch
 	EndIf
 	#EndRegion ;**** Listen for Remote Restart Request ****
 
@@ -1341,7 +819,7 @@ While True ;**** Loop Until Closed ****
 		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Window Handle Found: " & $g_hConanhWnd)
 	ElseIf ((_DateDiff('n', $g_sTimeCheck1, _NowCalc())) >= 5) Then
 		Local $MEM = ProcessGetStats($g_sConanPID, 0)
-		If $MEM[0] > $ExMem And $ExMemRestart = "no" Then
+		If $MEM[0] > $ExMem And $ExMemRestart = "no" And $g_bDebug Then
 			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1])
 		ElseIf $MEM[0] > $ExMem And $ExMemRestart = "yes" Then
 			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1] & " Excessive Memory Use - Restart Requested by ConanServerUtility Script")

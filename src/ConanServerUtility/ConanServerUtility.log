@@ -1,0 +1,7 @@
+2018/04/24 20:16:16 ConanServerUtility Script V2.16.0 Started
+2018/04/24 20:16:17 ConanServerUtility Stopped
+2018/04/24 20:19:13 ConanServerUtility Script V2.16.0 Started
+2018/04/24 20:19:13 Running SteamCMD without validate. [steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir C:\Game_Servers\Conan_Exiles_Server +app_update 443030 +quit]
+2018/04/24 20:19:14 [Conan Server Utility Server (PID: 0)] Started [ConanSandboxServer-Win64-Test.exe ConanSandBox -MULTIHOME=127.0.0.1 -Port=7777 -QueryPort=27015 -MaxPlayers=20 -ServerName="Conan Server Utility Server" -listen -nosteamclient -game -server -log]
+2018/04/24 20:19:17 [Conan Server Utility Server (PID: 0)] Server Failed to Start - ConanServerUtility Shutdown - Intiated by User
+2018/04/24 20:19:17 ConanServerUtility Stopped
