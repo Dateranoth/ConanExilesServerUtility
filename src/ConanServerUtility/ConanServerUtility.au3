@@ -1,18 +1,23 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.0.0.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.0.0.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.1.0.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.1.0.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - April 24, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=3.0.0
+#AutoIt3Wrapper_Res_Fileversion=3.1.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
 ;Originally written by Dateranoth for use
 ;by https://gamercide.com on their server
 ;Distributed Under GNU GENERAL PUBLIC LICENSE
+
+;RCON notifications will download external application mcrcon if enabled.
+;Tiiffi/mcrcon is licensed under the zlib License
+;https://github.com/Tiiffi/mcrcon/blob/master/LICENSE
+;https://github.com/Tiiffi/mcrcon
 
 #include <Date.au3>
 #include "required\RemoteRestart.au3"
@@ -31,9 +36,7 @@ Global Const $g_c_sHwndFile = @ScriptDir & "\ConanServerUtility_lasthwnd_tmp"
 Global Const $g_c_sMODIDFile = @ScriptDir & "\ConanServerUtility_modid2modname.ini"
 Global Const $g_c_sLogFile = @ScriptDir & "\ConanServerUtility.log"
 Global Const $g_c_sIniFile = @ScriptDir & "\ConanServerUtility.ini"
-;Global $g_iIniFail = 0
 Global $g_iBeginDelayedShutdown = 0
-Global $g_iDelayShutdownTime = 0
 Global $g_sServerSettingIniLoc = "\ConanSandbox\saved\Config\WindowsServer\ServerSettings.ini"
 
 If FileExists($g_c_sPIDFile) Then
@@ -68,8 +71,8 @@ EndFunc   ;==>Gamercide
 
 Func CloseServer()
 	If WinExists($g_hConanhWnd) Then
-		ControlSend($g_hConanhWnd, "", "", "I" & @CR)
-		ControlSend($g_hConanhWnd, "", "", "I" & @CR)
+		ControlSend($g_hConanhWnd, "", "", "^X" & @CR)
+		ControlSend($g_hConanhWnd, "", "", "^X" & @CR)
 		ControlSend($g_hConanhWnd, "", "", "^C")
 		FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Server Window Found - Sending Ctrl+C for Clean Shutdown")
 		WinWaitClose($g_hConanhWnd, "", 60)
@@ -313,7 +316,7 @@ Func SendDiscordMsg($sHookURLs, $sBotMessage, $sBotName = "", $sBotTTS = False, 
 		$oHTTPOST.Send($sJsonMessage)
 		Local $oStatusCode = $oHTTPOST.Status
 		Local $sResponseText = ""
-		If NOT $g_bDebug Then
+		If Not $g_bDebug Then
 			$sResponseText = "Enable Debugging to See Full Response Message"
 		Else
 			$sResponseText = "Message Response: " & $oHTTPOST.ResponseText
@@ -390,6 +393,15 @@ Func TwitchMsgLog($sT_Msg)
 	EndIf
 EndFunc   ;==>TwitchMsgLog
 #EndRegion ;**** Post to Twitch Chat Function ****
+
+#Region ;*** MCRCON Commands
+Func MCRCONcmd($l_sPath, $l_sIP, $l_sPort, $l_sPass, $l_sCommand, $l_sMessage = "")
+	If $l_sCommand = "broadcast" Then
+		RunWait('"' & @ComSpec & '" /c ' & $l_sPath & '\mcrcon.exe -c -s -H ' & $l_sIP & ' -P ' & $l_sPort & ' -p ' & $l_sPass & ' " broadcast ' & $l_sMessage & '"', $l_sPath, @SW_HIDE)
+	EndIf
+EndFunc   ;==>MCRCONcmd https://github.com/Tiiffi/mcrcon
+#EndRegion ;*** MCRCON Commands
+
 
 #Region ;**** Functions to Check for Update ****
 Func GetLatestVersion($sCmdDir)
@@ -658,7 +670,7 @@ EndFunc   ;==>UpdateMod
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.0.0 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.1.0 Started")
 ReadUini($g_c_sIniFile, $g_c_sLogFile)
 
 If $UseSteamCMD = "yes" Then
@@ -708,6 +720,19 @@ Else
 	EndIf
 EndIf
 
+If $g_sUseMCRCON = "yes" Then
+	Local $sFileExists = FileExists($g_sMCrconPath & "\mcrcon.exe")
+	If $sFileExists = 0 Then
+		InetGet("https://github.com/Tiiffi/mcrcon/releases/download/v0.0.5/mcrcon-0.0.5-windows.zip", @ScriptDir & "\mcrcon.zip", 0)
+		DirCreate($g_sMCrconPath) ; to extract to
+		_ExtractZip(@ScriptDir & "\mcrcon.zip", "", "mcrcon.exe", $g_sMCrconPath)
+		FileDelete(@ScriptDir & "\mcrcon.zip")
+		If Not FileExists($g_sMCrconPath & "\mcrcon.exe") Then
+			MsgBox(0x0, "MCRCON Not Found", "Could not find mcrcon.exe at " & $g_sMCrconPath)
+			Exit
+		EndIf
+	EndIf
+EndIf
 
 If $UseRemoteRestart = "yes" Then
 	; Start The TCP Services
@@ -776,11 +801,11 @@ While True ;**** Loop Until Closed ****
 			$g_sExtraServerCommands = " " & $g_sExtraServerCommands
 		EndIf
 		If $BindIP = "no" Then
-			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands)
-			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands & "]")
+			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -RconEnabled=" & $g_iRconEnabled & " -RconPassword=" & $g_sRconPass & " -RconPort=" & $g_iRconPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands)
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -RconEnabled=" & $g_iRconEnabled & " -RconPassword=" & ObfPass($g_sRconPass) & " -RconPort=" & $g_iRconPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands & "]")
 		Else
-			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands)
-			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands & "]")
+			$g_sConanPID = Run("" & $serverdir & "\ConanSandbox\Binaries\Win64\" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -RconEnabled=" & $g_iRconEnabled & " -RconPassword=" & $g_sRconPass & " -RconPort=" & $g_iRconPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands)
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Started [" & $g_c_sServerEXE & " ConanSandBox -MULTIHOME=" & $g_IP & " -Port=" & $GamePort & " -QueryPort=" & $QueryPort & " -RconEnabled=" & $g_iRconEnabled & " -RconPassword=" & ObfPass($g_sRconPass) & " -RconPort=" & $g_iRconPort & " -MaxPlayers=" & $MaxPlayers & " -ServerName=""" & $ServerName & """ -listen -nosteamclient -game -server -log" & $g_sExtraServerCommands & "]")
 		EndIf
 		If @error Or Not $g_sConanPID Then
 			If Not IsDeclared("iMsgBoxAnswer") Then Local $iMsgBoxAnswer
@@ -795,7 +820,8 @@ While True ;**** Loop Until Closed ****
 					FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Server Failed to Start. Script Initiated Restart Attempt after 60 seconds of no User Input.")
 			EndSelect
 		EndIf
-		$g_hConanhWnd = WinGetHandle(WinWait("" & $serverdir & "", "", 70))
+
+		$g_hConanhWnd = WinGetHandle(WinWait("" & $ServerName & "", "", 70))
 		If $SteamFix = "yes" Then
 			WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", 10)
 			If WinExists("" & $g_c_sServerEXE & " - Entry Point Not Found") Then
@@ -834,7 +860,7 @@ While True ;**** Loop Until Closed ****
 		If ProcessExists($g_sConanPID) Then
 			Local $MEM = ProcessGetStats($g_sConanPID, 0)
 			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
-			If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
+			If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Or ($g_sUseMCRCON = "yes") Then
 				$g_iBeginDelayedShutdown = 1
 				$g_sTimeCheck0 = _NowCalc
 			Else
@@ -848,7 +874,7 @@ While True ;**** Loop Until Closed ****
 	#Region ;**** Check for Update every X Minutes ****
 	If ($CheckForUpdate = "yes") And ((_DateDiff('n', $g_sTimeCheck0, _NowCalc())) >= $UpdateInterval) And ($g_iBeginDelayedShutdown = 0) Then
 		Local $bRestart = UpdateCheck()
-		If $bRestart And (($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes")) Then
+		If $bRestart And (($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Or ($g_sUseMCRCON = "yes")) Then
 			$g_iBeginDelayedShutdown = 1
 		ElseIf $bRestart Then
 			CloseServer()
@@ -873,10 +899,14 @@ While True ;**** Loop Until Closed ****
 	#EndRegion ;**** Check if Building Damage or Avatars need to be Toggled
 
 	#Region ;**** Announce to Twitch or Discord or Both ****
-	If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Then
+	If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Or ($g_sUseMCRCON = "yes") Then
 		If $g_iBeginDelayedShutdown = 1 Then
 			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Bot in Use. Delaying Shutdown for " & $g_iDelayShutdownTime & " minutes. Notifying Channel")
 			Local $sShutdownMessage = $ServerName & " Restarting in " & $g_iDelayShutdownTime & " minutes"
+			If $g_sUseMCRCON = "yes" Then
+				MCRCONcmd($g_sMCrconPath, $g_IP, $g_iRconPort, $g_sRconPass, "broadcast", $sShutdownMessage)
+				FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [RCON] Sent ( " & $sShutdownMessage & " ) to Players")
+			EndIf
 			If $sUseDiscordBot = "yes" Then
 				SendDiscordMsg($sDiscordWebHookURLs, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			EndIf
@@ -891,6 +921,10 @@ While True ;**** Loop Until Closed ****
 			CloseServer()
 		ElseIf $g_iBeginDelayedShutdown = 2 And ((_DateDiff('n', $g_sTimeCheck0, _NowCalc())) >= ($g_iDelayShutdownTime - 1)) Then
 			Local $sShutdownMessage = $ServerName & " Restarting in 1 minute. Final Warning"
+			If $g_sUseMCRCON = "yes" Then
+				MCRCONcmd($g_sMCrconPath, $g_IP, $g_iRconPort, $g_sRconPass, "broadcast", $sShutdownMessage)
+				FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [RCON] Sent ( " & $sShutdownMessage & " ) to Players")
+			EndIf
 			If $sUseDiscordBot = "yes" Then
 				SendDiscordMsg($sDiscordWebHookURLs, $sShutdownMessage, $sDiscordBotName, $bDiscordBotUseTTS, $sDiscordBotAvatar)
 			EndIf
