@@ -152,7 +152,7 @@ Func ReadUini($sIniFile, $sLogFile)
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $RestartCode Then
-		$RestartCode = "Admin1_Pass:" & $RestartCode & "-AllowedCharacters=1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@$%^&*()+=-{}[]\|:;./?"
+		$RestartCode = "Admin1_Pass" & $RestartCode & "-AllowedCharacters=1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@$%^&*()+=-{}[]\|:;./?"
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $sObfuscatePass Then
@@ -349,6 +349,8 @@ Func ReadUini($sIniFile, $sLogFile)
 
 	If $g_sRconEnabled = "yes" Then
 		Global $g_iRconEnabled = 1
+	Else
+		Global $g_iRconEnabled = 0
 	EndIf
 
 	If $bDiscordBotUseTTS = "yes" Then
