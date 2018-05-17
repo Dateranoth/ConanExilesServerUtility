@@ -29,6 +29,9 @@ Func ReadUini($sIniFile, $sLogFile)
 	Global $UseSteamCMD = IniRead($sIniFile, "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", $iniCheck)
 	Global $steamcmddir = IniRead($sIniFile, "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", $iniCheck)
 	Global $validategame = IniRead($sIniFile, "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", $iniCheck)
+	Global $g_sRconEnabled = IniRead($sIniFile, "Server RCON Settings", "EnableRCON", $iniCheck)
+	Global $g_sRconPass = IniRead($sIniFile, "Server RCON Settings", "RCONPassword", $iniCheck)
+	Global $g_iRconPort = IniRead($sIniFile, "Server RCON Settings", "RCONPort", $iniCheck)
 	Global $UseRemoteRestart = IniRead($sIniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $iniCheck)
 	Global $g_Port = IniRead($sIniFile, "Remote Restart Port", "ListenPort", $iniCheck)
 	Global $g_sRKey = IniRead($sIniFile, "Remote Restart Request Key http://IP:Port?KEY=user_pass", "RestartKey", $iniCheck)
@@ -52,6 +55,9 @@ Func ReadUini($sIniFile, $sLogFile)
 	Global $logRotate = IniRead($sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logRotate", $iniCheck)
 	Global $logQuantity = IniRead($sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $iniCheck)
 	Global $logHoursBetweenRotate = IniRead($sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $iniCheck)
+	Global $g_sUseMCRCON = IniRead($sIniFile, "Use MCRCON to Send Message to Players before Restart? yes/no", "use_mcrcon", $iniCheck)
+	Global $g_sMCrconPath = IniRead($sIniFile, "Use MCRCON to Send Message to Players before Restart? yes/no", "mcrconPath", $iniCheck)
+	Global $g_iMCrconNotifyTime = IniRead($sIniFile, "Use MCRCON to Send Message to Players before Restart? yes/no", "mcrconTimeBeforeRestart", $iniCheck)
 	Global $sUseDiscordBot = IniRead($sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $iniCheck)
 	Global $sDiscordWebHookURLs = IniRead($sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $iniCheck)
 	Global $sDiscordBotName = IniRead($sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $iniCheck)
@@ -119,6 +125,18 @@ Func ReadUini($sIniFile, $sLogFile)
 	EndIf
 	If $iniCheck = $validategame Then
 		$validategame = "no"
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sRconEnabled Then
+		$g_sRconEnabled = "no"
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sRconPass Then
+		$g_sRconPass &= "_noHASHsymbol"
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_iRconPort Then
+		$g_iRconPort = "25578"
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $UseRemoteRestart Then
@@ -223,12 +241,27 @@ Func ReadUini($sIniFile, $sLogFile)
 	ElseIf $logHoursBetweenRotate < 1 Then
 		$logHoursBetweenRotate = 1
 	EndIf
+	If $iniCheck = $g_sUseMCRCON Then
+		$g_sUseMCRCON = "no"
+		$iIniFail += 1
+	ElseIf $g_sUseMCRCON = "yes" And $g_sRconEnabled <> "yes" Then
+		$g_sUseMCRCON = "no"
+		FileWriteLine($sLogFile, _NowCalc() & " Server RCON is Disabled. Disabling MCRCON Notifications. Cannot send RCON message without RCON enabled!")
+	EndIf
+	If $iniCheck = $g_sMCrconPath Then
+		$g_sMCrconPath = "C:\Game_Servers\mcrcon"
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_iMCrconNotifyTime Then
+		$g_iMCrconNotifyTime = "5"
+		$iIniFail += 1
+	EndIf
 	If $iniCheck = $sUseDiscordBot Then
 		$sUseDiscordBot = "no"
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $sDiscordWebHookURLs Then
-		$sDiscordWebHookURLs = "https://discordapp.com/api/webhooks/XXXXXX/XXXX <- NO TRAILING SLASH AND USE FULL URL FROM WEBHOOK URL ON DISCORD"
+		$sDiscordWebHookURLs = "https://discordapp.com/api/webhooks/XXXXXX/XXXX<-NO TRAILING SLASH AND USE FULL URL FROM WEBHOOK URL ON DISCORD"
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $sDiscordBotName Then
@@ -258,7 +291,7 @@ Func ReadUini($sIniFile, $sLogFile)
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $sChatOAuth Then
-		$sChatOAuth = "oauth:1234 (Generate OAuth Token Here: https://twitchapps.com/tmi)"
+		$sChatOAuth = "oauth:1234(Generate OAuth Token Here: https://twitchapps.com/tmi)"
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $sTwitchChannels Then
@@ -307,8 +340,15 @@ Func ReadUini($sIniFile, $sLogFile)
 		$g_sEnableDebug = "no"
 		$iIniFail =+ 1
 	EndIf
+
+
+
 	If $iIniFail > 0 Then
 		iniFileCheck($sIniFile, $iIniFail)
+	EndIf
+
+	If $g_sRconEnabled = "yes" Then
+		Global $g_iRconEnabled = 1
 	EndIf
 
 	If $bDiscordBotUseTTS = "yes" Then
@@ -317,13 +357,19 @@ Func ReadUini($sIniFile, $sLogFile)
 		$bDiscordBotUseTTS = False
 	EndIf
 
-	If ($sUseDiscordBot = "yes") Then
-		$g_iDelayShutdownTime = $iDiscordBotNotifyTime
+	Global $g_iDelayShutdownTime = 0
+	If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Or ($g_sUseMCRCON = "yes") Then
+		If ($sUseDiscordBot = "yes") And ($iDiscordBotNotifyTime > $g_iDelayShutdownTime) Then
+			$g_iDelayShutdownTime = $iDiscordBotNotifyTime
+		EndIf
 		If ($sUseTwitchBot = "yes") And ($iTwitchBotNotifyTime > $g_iDelayShutdownTime) Then
 			$g_iDelayShutdownTime = $iTwitchBotNotifyTime
 		EndIf
+		If ($g_sUseMCRCON = "yes") And ($g_iMCrconNotifyTime > $g_iDelayShutdownTime) Then
+			$g_iDelayShutdownTime = $g_iMCrconNotifyTime
+		EndIf
 	Else
-		$g_iDelayShutdownTime = $iTwitchBotNotifyTime
+		$g_iDelayShutdownTime = $g_iMCrconNotifyTime
 	EndIf
 
 	If $g_sFlipBuildingDmgSchedule = "yes" Then
@@ -381,6 +427,9 @@ Func UpdateIni($sIniFile)
 	IniWrite($sIniFile, "Use SteamCMD To Update Server? yes/no", "UseSteamCMD", $UseSteamCMD)
 	IniWrite($sIniFile, "SteamCMD Directory. NO TRAILING SLASH", "steamcmddir", $steamcmddir)
 	IniWrite($sIniFile, "Validate Files Every Time SteamCMD Runs? yes/no", "validategame", $validategame)
+	IniWrite($sIniFile, "Server RCON Settings", "EnableRCON", $g_sRconEnabled)
+	IniWrite($sIniFile, "Server RCON Settings", "RCONPassword", $g_sRconPass)
+	IniWrite($sIniFile, "Server RCON Settings", "RCONPort", $g_iRconPort)
 	IniWrite($sIniFile, "Use Remote Restart ?yes/no", "UseRemoteRestart", $UseRemoteRestart)
 	IniWrite($sIniFile, "Remote Restart Port", "ListenPort", $g_Port)
 	IniWrite($sIniFile, "Remote Restart Request Key http://IP:Port?KEY=user_pass", "RestartKey", $g_sRKey)
@@ -404,6 +453,9 @@ Func UpdateIni($sIniFile)
 	IniWrite($sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logRotate", $logRotate)
 	IniWrite($sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logQuantity", $logQuantity)
 	IniWrite($sIniFile, "Rotate X Number of Logs every X Hours? yes/no", "logHoursBetweenRotate", $logHoursBetweenRotate)
+	IniWrite($sIniFile, "Use MCRCON to Send Message to Players before Restart? yes/no", "use_mcrcon", $g_sUseMCRCON)
+	IniWrite($sIniFile, "Use MCRCON to Send Message to Players before Restart? yes/no", "mcrconPath", $g_sMCrconPath)
+	IniWrite($sIniFile, "Use MCRCON to Send Message to Players before Restart? yes/no", "mcrconTimeBeforeRestart", $g_iMCrconNotifyTime)
 	IniWrite($sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "UseDiscordBot", $sUseDiscordBot)
 	IniWrite($sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordWebHookURL", $sDiscordWebHookURLs)
 	IniWrite($sIniFile, "Use Discord Bot to Send Message Before Restart? yes/no", "DiscordBotName", $sDiscordBotName)
