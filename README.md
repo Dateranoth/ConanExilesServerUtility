@@ -21,6 +21,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Optionally restart server on excessive memory use.
 *   Optionally Notify Discord Channel before Restart using Webhook
 *   Optionally Notify Multiple Twitch Channels using IRC
+*   Optionally Use [MCRCON](https://github.com/Tiiffi/mcrcon) to Notify Players before Restart
 *   Log Excessive memory use. Set to a very large number if you don't wish to log anything
 *   Set Game Name, Game IP, Game port, max players, Server Password, and Admin Password
 *   Rotate X number of logs created by utility every X hours
@@ -65,9 +66,26 @@ CheckForModUpdate=no
 ModList=#########,#########
 ```
 
+# How to Use RCON Notification
+**RCON must be enabled on server**
+* EnableRCON
+   * Set to yes to enable RCON on Server
+* RCONPassword
+   * Set your unique password to protect RCON access
+* RCONPort
+   * Set to the port you would like to use for RCON
+ 
+**[MCRCON](https://github.com/Tiiffi/mcrcon) Is required to send RCON Notifications**
+* use_mcrcon
+   * Set to yes to Use MCRCON to send message to players via RCON
+* mcrconPath
+   * Set to path of MCRCON.exe ( No Trailing Slashes. Will be automatically downloaded if it does not exist )
+* mcrconTimeBeforeRestart
+   * Time in Minutes that the first announcement is sent to the Players before Server Restart. If you also use Discord or Twitch, the setting with the HIGHEST notification time will be used.   
+
 # How to Use Discord Bot
 * UseDiscordBot
- * Set to yes to notify Discord Channel before Server Restart
+   * Set to yes to notify Discord Channel before Server Restart
 * DiscordWebHookURL
  * This is your Webhook  URL provided by discord. ( Instructions below for Desktop Application )
     1. Right Click on your server
@@ -78,13 +96,13 @@ ModList=#########,#########
     6. Paste the entire Webhook to the INI after DiscordWebHookURL=
        * To use multiple webhooks, separate each full webhook URL with a comma `,`
 * DiscordBotName
- * This will override the Name you setup in your webhook. Leave Blank to use default.
+   * This will override the Name you setup in your webhook. Leave Blank to use default.
 * DiscordBotUseTTS
- * Yes will make the bot announce with Text to Speech. No will turn off TTS
+   * Yes will make the bot announce with Text to Speech. No will turn off TTS
 * DiscrodBotAvatarLink
- * This is a fully qualified URL to an Image for the Bot Avatar. Will override default. Leave blank for default.
+   * This is a fully qualified URL to an Image for the Bot Avatar. Will override default. Leave blank for default.
 * DiscordBotTimeBeforeRestart
- * Time in Minutes that the Bot will make the first announcement to the channel before Server Restart. If you also use Twitch, the setting with the HIGHEST notification time will be used
+   * Time in Minutes that the Bot will make the first announcement to the channel before Server Restart. If you also use Twitch or RCON, the setting with the HIGHEST notification time will be used
 
 The Bot will announce immediately upon restart time. Notifying how long users have based on the time you set. The bot will then announce 1 minute before the server restarts. Finally, the bot will announce exactly as the restart command is sent. Announcements will be sent for Daily Restarts and Update Restarts. Remote Restarts are considered Admin controlled and immediately restart the server without notice.
 ```
@@ -99,19 +117,19 @@ DiscordBotTimeBeforeRestart=5
 
 # How to use Twitch Bot
 * UseTwitchBot
- * Set to yes to notify Twitch Channels before Server Restart
+   * Set to yes to notify Twitch Channels before Server Restart
 * TwitchNick
- * This is your Twitch nickname. It can be an account created for a bot , or your personal account.
+   * This is your Twitch nickname. It can be an account created for a bot , or your personal account.
 * ChatOAuth
- * This is the key needed to connect to chat over IRC. You need to generate one for this to work.
-    1. Go to this URL https://twitchapps.com/tmi
-    2. Connect to your account.
-    3. Copy the generated key.
-    4. Paste the entire key to the INI after ChatOAuth=
+   * This is the key needed to connect to chat over IRC. You need to generate one for this to work.
+      1. Go to this URL https://twitchapps.com/tmi
+      2. Connect to your account.
+      3. Copy the generated key.
+      4. Paste the entire key to the INI after ChatOAuth=
 * TwitchChannels
-  * These are the channels you wish to send the announcement to. You can send to just one or you can send to multiple channels. Separate each channel with a comma `,` `TwitchChannels=channel1,channel2`
+   * These are the channels you wish to send the announcement to. You can send to just one or you can send to multiple channels. Separate each channel with a comma `,` `TwitchChannels=channel1,channel2`
 * TwitchBotTimeBeforeRestart
- * Time in Minutes that the Bot will make the first announcement to the channel before Server Restart. If you also use Discord, the setting with the HIGHEST notification time will be used.
+   * Time in Minutes that the Bot will make the first announcement to the channel before Server Restart. If you also use Discord or RCON, the setting with the HIGHEST notification time will be used.
 
 The Bot will announce immediately upon restart time. Notifying how long users have based on the time you set. The bot will then announce 1 minute before the server restarts. Finally, the bot will announce exactly as the restart command is sent. Announcements will be sent for Daily Restarts and Update Restarts. Remote Restarts are considered Admin controlled and immediately restart the server without notice.
 ```
@@ -139,13 +157,13 @@ On the Remote Restart Utility the user will enter the full string regardless of 
 ## Examples:
 `RestartCode=pass1,pass2,pass3,Admin1_pass4`
 * User enters *pass1* in Restart Utility:
-  * Server resets and Log displays: Anonymous user @ IP triggered restart using pass1 ( Hidden by default )
+   * Server resets and Log displays: Anonymous user @ IP triggered restart using pass1 ( Hidden by default )
 * User enters *Admin1_pass4* in Restart Utility
-  * Server resets and Log displays: Admin1 @ IP triggered restart using pass4 ( Hidden by default )
+   * Server resets and Log displays: Admin1 @ IP triggered restart using pass4 ( Hidden by default )
 * User enters *wrongpassword* in Restart Utility
-  * Server does NOT reset and Log displays: Restart Attempt @ IP using string *wrongpassword* (failed attempts are always shown in full)
+   * Server does NOT reset and Log displays: Restart Attempt @ IP using string *wrongpassword* (failed attempts are always shown in full)
 * User enters *Admin1_wrongpassword*
-  * Server does NOT reset and Log displays: Restart Attempt @ IP using string *Admin1_wrongpassword* (failed attempts are always shown in full)
+   * Server does NOT reset and Log displays: Restart Attempt @ IP using string *Admin1_wrongpassword* (failed attempts are always shown in full)
 
 # Hide Passwords in Log
 Additionally, I have added the option to Obfuscate passwords in the log files. Currently that is done by replacing all except 4 characters starting with the 4th character with *
