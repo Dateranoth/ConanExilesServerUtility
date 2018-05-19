@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.2.0.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.2.0.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.2.1.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.2.1.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - May 18, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=3.2.0
+#AutoIt3Wrapper_Res_Fileversion=3.2.1
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -397,7 +397,7 @@ EndFunc   ;==>TwitchMsgLog
 #Region ;*** MCRCON Commands
 Func MCRCONcmd($l_sPath, $l_sIP, $l_sPort, $l_sPass, $l_sCommand, $l_sMessage = "")
 	If $l_sCommand = "broadcast" Then
-		RunWait('"' & @ComSpec & '" /c ' & $l_sPath & '\mcrcon.exe -c -s -H ' & $l_sIP & ' -P ' & $l_sPort & ' -p ' & $l_sPass & ' " broadcast ' & $l_sMessage & '"', $l_sPath, @SW_HIDE)
+		RunWait($l_sPath & '\mcrcon.exe -c -s -H ' & $l_sIP & ' -P ' & $l_sPort & ' -p ' & $l_sPass & ' "broadcast ' & $l_sMessage & '"', $l_sPath, @SW_HIDE)
 	EndIf
 EndFunc   ;==>MCRCONcmd
 #EndRegion ;*** MCRCON Commands
@@ -409,7 +409,7 @@ Func GetLatestVersion($sCmdDir)
 	If FileExists($sCmdDir & "\appcache") Then
 		DirRemove($sCmdDir & "\appcache", 1)
 	EndIf
-	RunWait('"' & @ComSpec & '" /c ' & $sCmdDir & '\steamcmd.exe +login anonymous +app_info_update 1 +app_info_print 443030 +app_info_print 443030 +exit > app_info.tmp', $sCmdDir, @SW_HIDE)
+	RunWait('"' & @ComSpec & '" /c "' & $sCmdDir & '\steamcmd.exe" +login anonymous +app_info_update 1 +app_info_print 443030 +app_info_print 443030 +exit > app_info.tmp', $sCmdDir, @SW_HIDE)
 	Local Const $sFilePath = $sCmdDir & "\app_info.tmp"
 	Local $hFileOpen = FileOpen($sFilePath, 0)
 	If $hFileOpen = -1 Then
@@ -670,7 +670,7 @@ EndFunc   ;==>UpdateMod
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.2.0 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.2.1 Started")
 ReadUini($g_c_sIniFile, $g_c_sLogFile)
 
 If $UseSteamCMD = "yes" Then
@@ -680,7 +680,7 @@ If $UseSteamCMD = "yes" Then
 		DirCreate($steamcmddir) ; to extract to
 		_ExtractZip(@ScriptDir & "\steamcmd.zip", "", "steamcmd.exe", $steamcmddir)
 		FileDelete(@ScriptDir & "\steamcmd.zip")
-		FileWriteLine($g_c_sLogFile, _NowCalc() & " Running SteamCMD with validate. [steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 validate +quit]")
+		FileWriteLine($g_c_sLogFile, _NowCalc() & " Running SteamCMD. [steamcmd.exe +quit]")
 		RunWait("" & $steamcmddir & "\steamcmd.exe +quit")
 		If Not FileExists($steamcmddir & "\steamcmd.exe") Then
 			MsgBox(0x0, "SteamCMD Not Found", "Could not find steamcmd.exe at " & $steamcmddir)
@@ -783,16 +783,16 @@ While True ;**** Loop Until Closed ****
 		$g_iBeginDelayedShutdown = 0
 		If $g_sExecuteExternalScript = "yes" Then
 			FileWriteLine($g_c_sLogFile, _NowCalc() & " Executing External Script " & $g_sExternalScriptDir & "\" & $g_sExternalScriptName)
-			RunWait('"' & @ComSpec & '" /c ' & $g_sExternalScriptDir & '\' & $g_sExternalScriptName & '"', $g_sExternalScriptDir)
+			RunWait($g_sExternalScriptDir & '\' & $g_sExternalScriptName, $g_sExternalScriptDir)
 			FileWriteLine($g_c_sLogFile, _NowCalc() & " External Script Finished. Continuing Server Start.")
 		EndIf
 		If $UseSteamCMD = "yes" Then
 			If $validategame = "yes" Then
 				FileWriteLine($g_c_sLogFile, _NowCalc() & " Running SteamCMD with validate. [steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 validate +quit]")
-				RunWait("" & $steamcmddir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 validate +quit")
+				RunWait("" & $steamcmddir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir """ & $serverdir & """ +app_update 443030 validate +quit")
 			Else
 				FileWriteLine($g_c_sLogFile, _NowCalc() & " Running SteamCMD without validate. [steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 +quit]")
-				RunWait("" & $steamcmddir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 +quit")
+				RunWait("" & $steamcmddir & "\steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir """ & $serverdir & """ +app_update 443030 +quit")
 			EndIf
 		EndIf
 		If $g_sUpdateMods = "yes" Then
