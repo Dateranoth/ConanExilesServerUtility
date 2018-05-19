@@ -22,6 +22,7 @@ Originally written for use on [Gamercide's](https://gamercide.org) Server
 *   Optionally Notify Discord Channel before Restart using Webhook
 *   Optionally Notify Multiple Twitch Channels using IRC
 *   Optionally Use [MCRCON](https://github.com/Tiiffi/mcrcon) to Notify Players before Restart
+*   Optionally Execute External Script before starting server.
 *   Log Excessive memory use. Set to a very large number if you don't wish to log anything
 *   Set Game Name, Game IP, Game port, max players, Server Password, and Admin Password
 *   Rotate X number of logs created by utility every X hours
@@ -263,6 +264,23 @@ In the INI I fill out:
 ModList=87654321,12345678
 ```
 **DO NOT DELETE ConanServerUtility_modid2modname.ini**
+
+# Execute External Script
+**If enabled this will run an executable of your choosing directly before the server is updated or started.**
+* ExecuteExternalScript
+   * yes to enable
+* ExternalScriptDir
+   * This is the folder location of the file you want to run before the server starts. NO TRAILING SLASH
+* ExternalScriptName
+   * This is the name.extension of the file you want to run.
+
+Sample INI Settings:
+```
+[Execute External Script Before Server Start? yes/no]
+ExecuteExternalScript=yes
+ExternalScriptDir=C:\Game_Servers\SQL_Scripts
+ExternalScriptName=CleanDB.bat
+```
 
 # Request Restart From Browser
 **You can now send restart commands from any Web Browser**
