@@ -4,7 +4,7 @@
 #AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.2.0.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - April 24, 2018
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - May 18, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
 #AutoIt3Wrapper_Res_Fileversion=3.2.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
