@@ -67,6 +67,18 @@ CheckForModUpdate=no
 ModList=#########,#########
 ```
 
+### How to Sort Mods in Specific Order
+To sort mods in a specific order, simply list them in the INI file in the order you wish them to load.
+
+**Example**
+I want to install mod ID 12345678 (conanstuff) & mod ID 87654321 (moreconanstuff) in order of moreconanstuff, conanstuff.
+
+In the INI I fill out:
+```
+ModList=87654321,12345678
+```
+**DO NOT DELETE ConanServerUtility_modid2modname.ini**
+
 # How to Use RCON Notification
 **RCON must be enabled on server**
 * EnableRCON
@@ -251,19 +263,6 @@ The first time this is ran and a server is not running it will copy all missing 
 
 If `IniOverwriteFix=no`
 Schedules may or may not work, and it is possible that your server will be stuck in a restart loop. It is suggested that you leave this set to `yes`
-
-
-### How to Sort Mods in Specific Order
-To sort mods in a specific order, simply list them in the INI file in the order you wish them to load.
-
-**Example**
-I want to install mod ID 12345678 (conanstuff) & mod ID 87654321 (moreconanstuff) in order of moreconanstuff, conanstuff.
-
-In the INI I fill out:
-```
-ModList=87654321,12345678
-```
-**DO NOT DELETE ConanServerUtility_modid2modname.ini**
 
 # Execute External Script
 **If enabled this will run an executable of your choosing directly before the server is updated or started.**
