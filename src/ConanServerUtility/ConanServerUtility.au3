@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.1.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.1.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.2.0.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.2.0.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - April 24, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=3.1.1
+#AutoIt3Wrapper_Res_Fileversion=3.2.0
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -399,7 +399,7 @@ Func MCRCONcmd($l_sPath, $l_sIP, $l_sPort, $l_sPass, $l_sCommand, $l_sMessage = 
 	If $l_sCommand = "broadcast" Then
 		RunWait('"' & @ComSpec & '" /c ' & $l_sPath & '\mcrcon.exe -c -s -H ' & $l_sIP & ' -P ' & $l_sPort & ' -p ' & $l_sPass & ' " broadcast ' & $l_sMessage & '"', $l_sPath, @SW_HIDE)
 	EndIf
-EndFunc   ;==>MCRCONcmd https://github.com/Tiiffi/mcrcon
+EndFunc   ;==>MCRCONcmd
 #EndRegion ;*** MCRCON Commands
 
 
@@ -670,7 +670,7 @@ EndFunc   ;==>UpdateMod
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.1.1 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.2.0 Started")
 ReadUini($g_c_sIniFile, $g_c_sLogFile)
 
 If $UseSteamCMD = "yes" Then
@@ -734,6 +734,19 @@ If $g_sUseMCRCON = "yes" Then
 	EndIf
 EndIf
 
+If $g_sExecuteExternalScript = "yes" Then
+	Local $sFileExists = FileExists($g_sExternalScriptDir & "\" & $g_sExternalScriptName)
+	If $sFileExists = 0 Then
+		Local $ExtScriptNotFound = MsgBox(4100, "External Script Not Found", "Could not find " & $g_sExternalScriptDir & "\" & $g_sExternalScriptName & @CRLF & "Would you like to Exit Now to fix?", 20)
+		If $ExtScriptNotFound = 6 Then
+			Exit
+		Else
+			$g_sExecuteExternalScript = "no"
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " External Script Execution Disabled - Could not find " & $g_sExternalScriptDir & "\" & $g_sExternalScriptName)
+		EndIf
+	EndIf
+EndIf
+
 If $UseRemoteRestart = "yes" Then
 	; Start The TCP Services
 	TCPStartup()
@@ -768,6 +781,11 @@ While True ;**** Loop Until Closed ****
 	#Region ;**** Keep Server Alive Check. ****
 	If Not ProcessExists($g_sConanPID) Then
 		$g_iBeginDelayedShutdown = 0
+		If $g_sExecuteExternalScript = "yes" Then
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " Executing External Script " & $g_sExternalScriptDir & "\" & $g_sExternalScriptName)
+			RunWait('"' & @ComSpec & '" /c ' & $g_sExternalScriptDir & '\' & $g_sExternalScriptName & '"', $g_sExternalScriptDir)
+			FileWriteLine($g_c_sLogFile, _NowCalc() & " External Script Finished. Continuing Server Start.")
+		EndIf
 		If $UseSteamCMD = "yes" Then
 			If $validategame = "yes" Then
 				FileWriteLine($g_c_sLogFile, _NowCalc() & " Running SteamCMD with validate. [steamcmd.exe +@ShutdownOnFailedCommand 1 +@NoPromptForPassword 1 +login anonymous +force_install_dir " & $serverdir & " +app_update 443030 validate +quit]")

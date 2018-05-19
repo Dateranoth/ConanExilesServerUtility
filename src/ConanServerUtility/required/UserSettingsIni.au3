@@ -77,6 +77,9 @@ Func ReadUini($sIniFile, $sLogFile)
 	Global $g_sFlipAvatarSchedule = IniRead($sIniFile, "Disable Avatars by Scheduled Time? yes/no", "FlipAvatarSchedule", $iniCheck)
 	Global $g_sIniOverwriteFix = IniRead($sIniFile, "Bug Fix - Copy from then Delete Default Server Settings INI? yes/no", "IniOverwriteFix", $iniCheck)
 	Global $g_sExtraServerCommands = IniRead($sIniFile, "Extra Command Line Options. Leave Blank if Not Using", "ExtraServerCommands", $iniCheck)
+	Global $g_sExecuteExternalScript = IniRead($sIniFile, "Execute External Script Before Server Start? yes/no", "ExecuteExternalScript", $iniCheck)
+	Global $g_sExternalScriptDir = IniRead($sIniFile, "Execute External Script Before Server Start? yes/no", "ExternalScriptDir", $iniCheck)
+	Global $g_sExternalScriptName = IniRead($sIniFile, "Execute External Script Before Server Start? yes/no", "ExternalScriptName", $iniCheck)
 	Global $g_sEnableDebug = IniRead($sIniFile, "Enable Debug to Output More Log Detail? yes/no", "EnableDebug", $iniCheck)
 
 	If $iniCheck = $BindIP Then
@@ -334,11 +337,23 @@ Func ReadUini($sIniFile, $sLogFile)
 	EndIf
 	If $iniCheck = $g_sExtraServerCommands Then
 		$g_sExtraServerCommands = ""
-		$iIniFail =+ 1
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sExecuteExternalScript Then
+		$g_sExecuteExternalScript = "no"
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sExternalScriptDir Then
+		$g_sExternalScriptDir = "C:\Game_Servers\SQL_Scripts"
+		$iIniFail += 1
+	EndIf
+	If $iniCheck = $g_sExternalScriptName Then
+		$g_sExternalScriptName = "CleanDB.bat"
+		$iIniFail += 1
 	EndIf
 	If $iniCheck = $g_sEnableDebug Then
 		$g_sEnableDebug = "no"
-		$iIniFail =+ 1
+		$iIniFail += 1
 	EndIf
 
 
@@ -477,6 +492,9 @@ Func UpdateIni($sIniFile)
 	IniWrite($sIniFile, "Disable Avatars by Scheduled Time? yes/no", "FlipAvatarSchedule", $g_sFlipAvatarSchedule)
 	IniWrite($sIniFile, "Bug Fix - Copy from then Delete Default Server Settings INI? yes/no", "IniOverwriteFix", $g_sIniOverwriteFix)
 	IniWrite($sIniFile, "Extra Command Line Options. Leave Blank if Not Using", "ExtraServerCommands", $g_sExtraServerCommands)
+	IniWrite($sIniFile, "Execute External Script Before Server Start? yes/no", "ExecuteExternalScript", $g_sExecuteExternalScript)
+	IniWrite($sIniFile, "Execute External Script Before Server Start? yes/no", "ExternalScriptDir", $g_sExternalScriptDir)
+	IniWrite($sIniFile, "Execute External Script Before Server Start? yes/no", "ExternalScriptName", $g_sExternalScriptName)
 	IniWrite($sIniFile, "Enable Debug to Output More Log Detail? yes/no", "EnableDebug", $g_sEnableDebug)
 EndFunc   ;==>UpdateIni
 #EndRegion ;**** INI Settings - User Variables ****
