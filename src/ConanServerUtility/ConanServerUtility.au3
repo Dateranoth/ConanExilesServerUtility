@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.2.1.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.2.1.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.2.2.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.2.2.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - May 18, 2018
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - June 7, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=3.2.1
+#AutoIt3Wrapper_Res_Fileversion=3.2.2
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -668,9 +668,16 @@ Func UpdateMod($sMod, $sSteamCmdDir, $sServerDir, $iReason)
 EndFunc   ;==>UpdateMod
 #EndRegion ;**** Functions to Check for Mod Updates ****
 
+Func CloseEPointError($iWaitTime = 10)
+	WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", $iWaitTime)
+	While WinExists("" & $g_c_sServerEXE & " - Entry Point Not Found")
+		ControlSend("" & $g_c_sServerEXE & " - Entry Point Not Found", "", "", "{enter}")
+	WEnd
+EndFunc   ;==>CloseEPointError
+
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.2.1 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.2.2 Started")
 ReadUini($g_c_sIniFile, $g_c_sLogFile)
 
 If $UseSteamCMD = "yes" Then
@@ -839,17 +846,13 @@ While True ;**** Loop Until Closed ****
 			EndSelect
 		EndIf
 
-		$g_hConanhWnd = WinGetHandle(WinWait("" & $ServerName & "", "", 70))
 		If $SteamFix = "yes" Then
-			WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", 10)
-			If WinExists("" & $g_c_sServerEXE & " - Entry Point Not Found") Then
-				ControlSend("" & $g_c_sServerEXE & " - Entry Point Not Found", "", "", "{enter}")
-			EndIf
-			WinWait("" & $g_c_sServerEXE & " - Entry Point Not Found", "", 10)
-			If WinExists("" & $g_c_sServerEXE & " - Entry Point Not Found") Then
-				ControlSend("" & $g_c_sServerEXE & " - Entry Point Not Found", "", "", "{enter}")
-			EndIf
+			For $i = 3 To 1 Step -1
+				CloseEPointError($i * 5)
+			Next
 		EndIf
+
+		$g_hConanhWnd = WinGetHandle(WinWait("" & $ServerName & "", "", 70))
 		If FileExists($g_c_sPIDFile) Then
 			FileDelete($g_c_sPIDFile)
 		EndIf
