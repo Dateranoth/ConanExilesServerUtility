@@ -793,10 +793,16 @@ While True ;**** Loop Until Closed ****
 		Local $sRestart = _RemoteRestart($MainSocket, $RestartCode, $g_sRKey, $sObfuscatePass, $g_IP, $ServerName, $g_bDebug)
 		Switch @error
 			Case 0
-				If ProcessExists($g_sConanPID) Then
-					Local $MEM = ProcessGetStats($g_sConanPID, 0)
+
+				If ProcessExists($g_sConanPID) And ($g_iBeginDelayedShutdown = 0) Then
 					FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [Work Memory:" & $MEM[0] & " | Peak Memory:" & $MEM[1] & "] " & $sRestart)
-					CloseServer()
+					Local $MEM = ProcessGetStats($g_sConanPID, 0)
+					If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Or ($g_sUseMCRCON = "yes") Then
+						$g_iBeginDelayedShutdown = 1
+						$g_sTimeCheck0 = _NowCalc
+					Else
+						CloseServer()
+					EndIf
 				EndIf
 			Case 1 To 4
 				FileWriteLine($g_c_sLogFile, _NowCalc() & " " & $sRestart & @CRLF)
