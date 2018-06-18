@@ -41,14 +41,10 @@ Func ReadUini($sIniFile, $sLogFile)
 	Global $UpdateInterval = IniRead($sIniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $iniCheck)
 	Global $g_sUpdateMods = IniRead($sIniFile, "Install Mods and Check for Update? yes/no", "CheckForModUpdate", $iniCheck)
 	Global $g_sMods = IniRead($sIniFile, "Install Mods and Check for Update? yes/no", "ModList", $iniCheck)
-	Global $RestartDaily = IniRead($sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $iniCheck)
-	Global $HotHour1 = IniRead($sIniFile, "Daily Restart Hours? 00-23", "HotHour1", $iniCheck)
-	Global $HotHour2 = IniRead($sIniFile, "Daily Restart Hours? 00-23", "HotHour2", $iniCheck)
-	Global $HotHour3 = IniRead($sIniFile, "Daily Restart Hours? 00-23", "HotHour3", $iniCheck)
-	Global $HotHour4 = IniRead($sIniFile, "Daily Restart Hours? 00-23", "HotHour4", $iniCheck)
-	Global $HotHour5 = IniRead($sIniFile, "Daily Restart Hours? 00-23", "HotHour5", $iniCheck)
-	Global $HotHour6 = IniRead($sIniFile, "Daily Restart Hours? 00-23", "HotHour6", $iniCheck)
-	Global $HotMin = IniRead($sIniFile, "Daily Restart Minute? 00-59", "HotMin", $iniCheck)
+	Global $g_sRestartDaily = IniRead($sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $iniCheck)
+	Global $g_sRestartDays = IniRead($sIniFile, "Daily Restart Hours Comma Seperated 0=Everyday Sunday=1 Saturday=7 0-7", "RestartDays", $iniCheck)
+	Global $g_sRestartHours = IniRead($sIniFile, "Daily Restart Hours Comma Seperated 00-23", "RestartHours", $iniCheck)
+	Global $g_sRestartMin = IniRead($sIniFile, "Daily Restart Minute 00-59", "RestartMinute", $iniCheck)
 	Global $ExMem = IniRead($sIniFile, "Excessive Memory Amount?", "ExMem", $iniCheck)
 	Global $ExMemRestart = IniRead($sIniFile, "Restart On Excessive Memory Use? yes/no", "ExMemRestart", $iniCheck)
 	Global $SteamFix = IniRead($sIniFile, "Running Server with Steam Open? (yes/no)", "SteamFix", $iniCheck)
@@ -186,36 +182,20 @@ Func ReadUini($sIniFile, $sLogFile)
 		$g_sMods = "#########,#########"
 		$iIniFail += 1
 	EndIf
-	If $iniCheck = $RestartDaily Then
-		$RestartDaily = "no"
+	If $iniCheck = $g_sRestartDaily Then
+		$g_sRestartDaily = "no"
 		$iIniFail += 1
 	EndIf
-	If $iniCheck = $HotHour1 Then
-		$HotHour1 = "00"
+	If $iniCheck = $g_sRestartDays Then
+		$g_sRestartDays = "2,4,6"
 		$iIniFail += 1
 	EndIf
-	If $iniCheck = $HotHour2 Then
-		$HotHour2 = "00"
+	If $iniCheck = $g_sRestartHours Then
+		$g_sRestartHours = "12,23"
 		$iIniFail += 1
 	EndIf
-	If $iniCheck = $HotHour3 Then
-		$HotHour3 = "00"
-		$iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour4 Then
-		$HotHour4 = "00"
-		$iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour5 Then
-		$HotHour5 = "00"
-		$iIniFail += 1
-	EndIf
-	If $iniCheck = $HotHour6 Then
-		$HotHour6 = "00"
-		$iIniFail += 1
-	EndIf
-	If $iniCheck = $HotMin Then
-		$HotMin = "01"
+	If $iniCheck = $g_sRestartMin Then
+		$g_sRestartMin = "01"
 		$iIniFail += 1
 	EndIf
 	If $iniCheck = $ExMem Then
@@ -456,14 +436,10 @@ Func UpdateIni($sIniFile)
 	IniWrite($sIniFile, "Update Check Interval in Minutes 05-59", "UpdateInterval", $UpdateInterval)
 	IniWrite($sIniFile, "Install Mods and Check for Update? yes/no", "CheckForModUpdate", $g_sUpdateMods)
 	IniWrite($sIniFile, "Install Mods and Check for Update? yes/no", "ModList", $g_sMods)
-	IniWrite($sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $RestartDaily)
-	IniWrite($sIniFile, "Daily Restart Hours? 00-23", "HotHour1", $HotHour1)
-	IniWrite($sIniFile, "Daily Restart Hours? 00-23", "HotHour2", $HotHour2)
-	IniWrite($sIniFile, "Daily Restart Hours? 00-23", "HotHour3", $HotHour3)
-	IniWrite($sIniFile, "Daily Restart Hours? 00-23", "HotHour4", $HotHour4)
-	IniWrite($sIniFile, "Daily Restart Hours? 00-23", "HotHour5", $HotHour5)
-	IniWrite($sIniFile, "Daily Restart Hours? 00-23", "HotHour6", $HotHour6)
-	IniWrite($sIniFile, "Daily Restart Minute? 00-59", "HotMin", $HotMin)
+	IniWrite($sIniFile, "Restart Server Daily? yes/no", "RestartDaily", $g_sRestartDaily)
+	IniWrite($sIniFile, "Daily Restart Hours Comma Seperated 0=Everyday Sunday=1 Saturday=7 0-7", "RestartDays", $g_sRestartDays)
+	IniWrite($sIniFile, "Daily Restart Hours Comma Seperated 00-23", "RestartHours", $g_sRestartHours)
+	IniWrite($sIniFile, "Daily Restart Minute 00-59", "RestartMinute", $g_sRestartMin)
 	IniWrite($sIniFile, "Excessive Memory Amount?", "ExMem", $ExMem)
 	IniWrite($sIniFile, "Restart On Excessive Memory Use? yes/no", "ExMemRestart", $ExMemRestart)
 	IniWrite($sIniFile, "Running Server with Steam Open? (yes/no)", "SteamFix", $SteamFix)
