@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.2.3.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.2.3.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.3.0-beta.3.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.3.0-beta.3.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
-#AutoIt3Wrapper_Res_Comment=By Dateranoth - June 7, 2018
+#AutoIt3Wrapper_Res_Comment=By Dateranoth - June 18, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=3.2.3
+#AutoIt3Wrapper_Res_Fileversion=3.3.0-beta.3
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -92,6 +92,25 @@ EndFunc   ;==>CloseServer
 Func LogWrite($sString)
 	FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] " & $sString)
 EndFunc   ;==>LogWrite
+
+Func DailyRestartCheck($sWDays, $sHours, $sMin)
+	Local $iDay = -1
+	Local $iHour = -1
+	Local $aDays = StringSplit($sWDays, ",")
+	Local $aHours = StringSplit($sHours, ",")
+	For $d = 1 To $aDays[0]
+		$iDay = StringStripWS($aDays[$d], 8)
+		If Int($iDay) = Int(@WDAY) Or Int($iDay) = 0 Then
+			For $h = 1 To $aHours[0]
+				$iHour = StringStripWS($aHours[$h], 8)
+				If Int($iHour) = Int(@HOUR) And Int($sMin) = Int(@MIN) Then
+					Return True
+				EndIf
+			Next
+		EndIf
+	Next
+	Return False
+EndFunc   ;==>DailyRestartCheck
 
 Func RotateFile($sFile, $sBackupQty, $bDelOrig = True) ;Pass File to Rotate and Quantity of Files to Keep for backup. Optionally Keep Original.
 	Local $hCreateTime = @YEAR & @MON & @MDAY
@@ -677,7 +696,7 @@ EndFunc   ;==>CloseEPointError
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.2.3 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.3.0-beta.3 Started")
 ReadUini($g_c_sIniFile, $g_c_sLogFile)
 
 If $UseSteamCMD = "yes" Then
@@ -774,10 +793,16 @@ While True ;**** Loop Until Closed ****
 		Local $sRestart = _RemoteRestart($MainSocket, $RestartCode, $g_sRKey, $sObfuscatePass, $g_IP, $ServerName, $g_bDebug)
 		Switch @error
 			Case 0
-				If ProcessExists($g_sConanPID) Then
+
+				If ProcessExists($g_sConanPID) And ($g_iBeginDelayedShutdown = 0) Then
 					Local $MEM = ProcessGetStats($g_sConanPID, 0)
 					FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] [Work Memory:" & $MEM[0] & " | Peak Memory:" & $MEM[1] & "] " & $sRestart)
-					CloseServer()
+					If ($sUseDiscordBot = "yes") Or ($sUseTwitchBot = "yes") Or ($g_sUseMCRCON = "yes") Then
+						$g_iBeginDelayedShutdown = 1
+						$g_sTimeCheck0 = _NowCalc
+					Else
+						CloseServer()
+					EndIf
 				EndIf
 			Case 1 To 4
 				FileWriteLine($g_c_sLogFile, _NowCalc() & " " & $sRestart & @CRLF)
@@ -876,8 +901,8 @@ While True ;**** Loop Until Closed ****
 	EndIf
 	#EndRegion ;**** Keep Server Alive Check. ****
 
-	#Region ;**** Restart Server Every X Hours ****
-	If ((@HOUR = $HotHour1 Or @HOUR = $HotHour2 Or @HOUR = $HotHour3 Or @HOUR = $HotHour4 Or @HOUR = $HotHour5 Or @HOUR = $HotHour6) And @MIN = $HotMin And $RestartDaily = "yes" And ((_DateDiff('n', $g_sTimeCheck2, _NowCalc())) >= 1)) And ($g_iBeginDelayedShutdown = 0) Then
+	#Region ;**** Restart Server Every X Days and X Hours & Min****
+	If (($g_sRestartDaily = "yes") And ((_DateDiff('n', $g_sTimeCheck2, _NowCalc())) >= 1) And (DailyRestartCheck($g_sRestartDays, $g_sRestartHours, $g_sRestartMin))  And ($g_iBeginDelayedShutdown = 0) ) Then
 		If ProcessExists($g_sConanPID) Then
 			Local $MEM = ProcessGetStats($g_sConanPID, 0)
 			FileWriteLine($g_c_sLogFile, _NowCalc() & " [" & $ServerName & " (PID: " & $g_sConanPID & ")] Work Memory:" & $MEM[0] & " Peak Memory:" & $MEM[1] & " - Daily Restart Requested by ConanServerUtility Script")
