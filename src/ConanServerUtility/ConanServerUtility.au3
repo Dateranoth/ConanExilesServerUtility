@@ -1,12 +1,12 @@
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=..\..\resources\favicon.ico
-#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.3.0-beta.2.exe
-#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.3.0-beta.2.exe
+#AutoIt3Wrapper_Outfile=..\..\build\ConanServerUtility_x86_v3.3.0-beta.3.exe
+#AutoIt3Wrapper_Outfile_x64=..\..\build\ConanServerUtility_x64_v3.3.0-beta.3.exe
 #AutoIt3Wrapper_Compile_Both=y
 #AutoIt3Wrapper_UseX64=y
 #AutoIt3Wrapper_Res_Comment=By Dateranoth - June 18, 2018
 #AutoIt3Wrapper_Res_Description=Utility for Running Conan Server
-#AutoIt3Wrapper_Res_Fileversion=3.3.0-beta.2
+#AutoIt3Wrapper_Res_Fileversion=3.3.0-beta.3
 #AutoIt3Wrapper_Res_LegalCopyright=Dateranoth @ https://gamercide.com
 #AutoIt3Wrapper_Res_Language=1033
 #EndRegion ;**** Directives created by AutoIt3Wrapper_GUI ****
@@ -94,16 +94,16 @@ Func LogWrite($sString)
 EndFunc   ;==>LogWrite
 
 Func DailyRestartCheck($sWDays, $sHours, $sMin)
-	Local $iDay = 0
-	Local $iHour = 0
+	Local $iDay = -1
+	Local $iHour = -1
 	Local $aDays = StringSplit($sWDays, ",")
 	Local $aHours = StringSplit($sHours, ",")
 	For $d = 1 To $aDays[0]
-		$iDay = Int(StringStripWS($aDays[$d], 8))
-		If $iDay = @WDAY Or $iDay = 0 Then
+		$iDay = StringStripWS($aDays[$d], 8)
+		If Int($iDay) = Int(@WDAY) Or Int($iDay) = 0 Then
 			For $h = 1 To $aHours[0]
-				$iHour = Int(StringStripWS($aHours[$h], 8))
-				If $iHour = @HOUR And $sMin = @MIN Then
+				$iHour = StringStripWS($aHours[$h], 8)
+				If Int($iHour) = Int(@HOUR) And Int($sMin) = Int(@MIN) Then
 					Return True
 				EndIf
 			Next
@@ -696,7 +696,7 @@ EndFunc   ;==>CloseEPointError
 
 #Region ;**** Startup Checks. Initial Log, Read INI, Check for Correct Paths, Check Remote Restart is bound to port. ****
 OnAutoItExitRegister("Gamercide")
-FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.3.0-beta.2 Started")
+FileWriteLine($g_c_sLogFile, _NowCalc() & " ConanServerUtility Script V3.3.0-beta.3 Started")
 ReadUini($g_c_sIniFile, $g_c_sLogFile)
 
 If $UseSteamCMD = "yes" Then
